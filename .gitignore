@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Next.js build output and generated types
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Written by `next dev` on every run (Next.js agent notes); not ours to maintain.
+AGENTS.md
+
+# Secrets: never commit real env files. .env.example lists names only.
+.env*
+!.env.example
+
+# Test output
+test-results/
+playwright-report/
+coverage/
