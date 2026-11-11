@@ -5,6 +5,37 @@
     "toggleTheme": "Switch between light and dark theme"
   },
   "Home": {
-    "title": "Lease the office devices your business needs"
+    "title": "Lease the office devices your business needs",
+    "startPlan": "Build your plan"
+  },
+  "Plan": {
+    "title": "Build your plan",
+    "subtitle": "Choose devices, services and a lease term. Prices exclude VAT unless shown.",
+    "categories": {
+      "technology": "Technology",
+      "furniture": "Furniture",
+      "office_appliances": "Office appliances"
+    },
+    "perMonth": "{amount} /mo",
+    "notOffered": "Not offered for this term",
+    "decrease": "Remove one {name}",
+    "increase": "Add one {name}",
+    "quantity": "Quantity of {name}",
+    "services": "Services",
+    "termTitle": "Lease term",
+    "termHint": "A shorter term costs more each month and less in total.",
+    "months": "{count} months",
+    "summaryTitle": "Summary",
+    "itemCount": "{count, plural, =0 {No items} one {# item} other {# items}}",
+    "monthlyExclVat": "Monthly, excl. VAT",
+    "vat": "VAT (5%)",
+    "monthlyInclVat": "Monthly incl. VAT",
+    "fullTermExclVat": "Full term, excl. VAT",
+    "fullTermInclVat": "Full term incl. VAT",
+    "emptyPlan": "Add at least one item to see your total.",
+    "proceed": "Proceed to KYC",
+    "saving": "Saving your plan…",
+    "saved": "Your plan is saved. Business verification comes next.",
+    "saveFailed": "We couldn't save your plan. Please try again."
   }
 }

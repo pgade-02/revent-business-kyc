@@ -15,6 +15,13 @@
       "when": 1794392712812,
       "tag": "0001_users",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794395898793,
+      "tag": "0002_applications",
+      "breakpoints": true
     }
   ]
 }

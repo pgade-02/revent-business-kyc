@@ -22,7 +22,10 @@ export type PlanTotals = {
   term: Term;
   planMonthlyFils: number; // excluding VAT
   vatMonthlyFils: number; // display only
+  monthlyInclVatFils: number; // display only
   contractTotalFils: number; // planMonthly × term, excluding VAT
+  // Matches the live site: monthly incl. VAT × term, not VAT on the full total.
+  contractTotalInclVatFils: number; // display only
 };
 
 export type PricingFailure =
@@ -56,13 +59,17 @@ export function pricePlan(lines: readonly PlanLine[], term: Term, prices: PriceB
     planMonthlyFils += unitMonthly * line.quantity;
   }
 
+  const vatMonthlyFils = vatOnMonthly(planMonthlyFils);
+  const monthlyInclVatFils = planMonthlyFils + vatMonthlyFils;
   return {
     ok: true,
     totals: {
       term,
       planMonthlyFils,
-      vatMonthlyFils: vatOnMonthly(planMonthlyFils),
+      vatMonthlyFils,
+      monthlyInclVatFils,
       contractTotalFils: planMonthlyFils * term,
+      contractTotalInclVatFils: monthlyInclVatFils * term,
     },
   };
 }

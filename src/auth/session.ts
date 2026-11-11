@@ -46,6 +46,22 @@ export async function startSession(userId: string): Promise<void> {
   });
 }
 
+export type CustomerSessionResult = { ok: true; user: SessionUser } | { ok: false; reason: "NOT_A_CUSTOMER" };
+
+// Customers have no sign-in step in v1 (PRD §4): a visitor without a session
+// becomes the seeded customer. A signed-in reviewer is refused, not switched.
+// Only callable from a route handler or server action, because it may set a cookie.
+export async function getOrStartCustomerSession(): Promise<CustomerSessionResult> {
+  const current = await getCurrentUser();
+  if (current) return current.role === "customer" ? { ok: true, user: current } : { ok: false, reason: "NOT_A_CUSTOMER" };
+
+  const db = await getAppDatabase();
+  const [customer] = await db.select().from(users).where(eq(users.role, "customer")).limit(1);
+  if (!customer) throw new Error("no seeded customer: the database was not seeded");
+  await startSession(customer.id);
+  return { ok: true, user: customer };
+}
+
 export async function endSession(): Promise<void> {
   (await cookies()).delete(SESSION_COOKIE);
 }

@@ -23,13 +23,21 @@ describe("pricePlan", () => {
     );
     expect(result).toEqual({
       ok: true,
-      totals: { term: 36, planMonthlyFils: 23_681, vatMonthlyFils: 1_184, contractTotalFils: 852_516 },
+      totals: {
+        term: 36,
+        planMonthlyFils: 23_681,
+        vatMonthlyFils: 1_184,
+        monthlyInclVatFils: 24_865,
+        contractTotalFils: 852_516,
+        contractTotalInclVatFils: 895_140,
+      },
     });
   });
 
   it("matches the live site: ThinkPad E14 with 2 services, 24 months", () => {
     // Site shows equipment AED 171.05 + services AED 61.00 = AED 232.05/mo,
-    // VAT AED 11.60, full term AED 5,569.20. The two services' split is not shown,
+    // VAT AED 11.60, AED 243.65 incl. VAT, full term AED 5,569.20 excl. VAT and
+    // AED 5,847.60 incl. VAT. The two services' split is not shown,
     // so they are one combined test price here.
     const sitePrices: PriceBook = {
       products: new Map([["lenovo-thinkpad-e14", { 24: 17_105 }]]),
@@ -42,7 +50,14 @@ describe("pricePlan", () => {
     );
     expect(result).toEqual({
       ok: true,
-      totals: { term: 24, planMonthlyFils: 23_205, vatMonthlyFils: 1_160, contractTotalFils: 556_920 },
+      totals: {
+        term: 24,
+        planMonthlyFils: 23_205,
+        vatMonthlyFils: 1_160,
+        monthlyInclVatFils: 24_365,
+        contractTotalFils: 556_920,
+        contractTotalInclVatFils: 584_760,
+      },
     });
   });
 

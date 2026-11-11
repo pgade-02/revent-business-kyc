@@ -29,6 +29,24 @@ describe("seeded catalogue", () => {
     expect(await db.select().from(prices)).toHaveLength(39);
   });
 
+  it("marks only products with all three site prices as real prices", async () => {
+    const realPriced = (await db.select().from(products))
+      .filter((row) => !row.isDemoPrice)
+      .map((row) => row.id)
+      .sort();
+    expect(realPriced).toEqual([
+      "bean-to-cup-coffee-machine",
+      "lenovo-thinkpad-e14",
+      "sit-stand-desk",
+      "voip-desk-phone",
+    ]);
+  });
+
+  it("matches the live site's sit-stand desk prices", async () => {
+    const priceBook = await loadPriceBook(db);
+    expect(priceBook.products.get("sit-stand-desk")).toEqual({ 24: 10_175, 36: 7_326, 48: 5_800 });
+  });
+
   it("prices headset + 65-inch display at 36 months as 23,681 fils/month", async () => {
     const priceBook = await loadPriceBook(db);
     const result = pricePlan(
