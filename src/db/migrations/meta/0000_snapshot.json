@@ -1,0 +1,265 @@
+{
+  "id": "b4528814-442b-4865-a945-e6031457829b",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.prices": {
+      "name": "prices",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "term": {
+          "name": "term",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "monthly_fils": {
+          "name": "monthly_fils",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "prices_product_term": {
+          "name": "prices_product_term",
+          "columns": [
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "term",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "prices_service_term": {
+          "name": "prices_service_term",
+          "columns": [
+            {
+              "expression": "service_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "term",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "prices_product_id_products_id_fk": {
+          "name": "prices_product_id_products_id_fk",
+          "tableFrom": "prices",
+          "tableTo": "products",
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "prices_service_id_services_id_fk": {
+          "name": "prices_service_id_services_id_fk",
+          "tableFrom": "prices",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "prices_exactly_one_item": {
+          "name": "prices_exactly_one_item",
+          "value": "(\"prices\".\"product_id\" IS NULL) <> (\"prices\".\"service_id\" IS NULL)"
+        },
+        "prices_term_offered": {
+          "name": "prices_term_offered",
+          "value": "\"prices\".\"term\" IN (24, 36, 48)"
+        },
+        "prices_not_negative": {
+          "name": "prices_not_negative",
+          "value": "\"prices\".\"monthly_fils\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.products": {
+      "name": "products",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "product_category",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specs": {
+          "name": "specs",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "is_demo_price": {
+          "name": "is_demo_price",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scoring_settings": {
+      "name": "scoring_settings",
+      "schema": "",
+      "columns": {
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "settings": {
+          "name": "settings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.services": {
+      "name": "services",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.product_category": {
+      "name": "product_category",
+      "schema": "public",
+      "values": [
+        "technology",
+        "furniture",
+        "office_appliances"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
