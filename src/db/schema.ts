@@ -12,6 +12,19 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+export const userRole = pgEnum("user_role", ["customer", "reviewer"]);
+
+// v1 has no sign-up: one seeded customer and one seeded reviewer (PRD §4).
+// The customer's details pre-fill "Your account".
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  role: userRole("role").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  mobile: text("mobile"),
+  companyName: text("company_name"),
+});
+
 export const productCategory = pgEnum("product_category", ["technology", "furniture", "office_appliances"]);
 
 export const products = pgTable("products", {

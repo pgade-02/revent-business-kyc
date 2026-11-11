@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openDatabase, type Database } from "@/db/client";
 import { loadPriceBook } from "@/db/price-book";
-import { prices, products, scoringSettings, services } from "@/db/schema";
+import { prices, products, scoringSettings, services, users } from "@/db/schema";
 import { seedDatabase } from "@/db/seed/seed";
 import { scoringSettingsSchema } from "@/kyc/scoring/settings-schema";
 import { pricePlan, type Term } from "@/plan/pricing";
@@ -59,6 +59,13 @@ describe("seeded catalogue", () => {
     await expect(
       db.insert(prices).values({ productId: "paper-shredder", term: 12, monthlyFils: 100 }),
     ).rejects.toThrow();
+  });
+});
+
+describe("seeded users", () => {
+  it("has exactly one customer and one reviewer", async () => {
+    const roles = (await db.select().from(users)).map((user) => user.role).sort();
+    expect(roles).toEqual(["customer", "reviewer"]);
   });
 });
 
