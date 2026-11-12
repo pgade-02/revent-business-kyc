@@ -54,11 +54,12 @@ flowchart TD
         B -- Red: recommend reject --> SUM
         SUM --> REV[Team review page]
         REV --> A{Team decision}
-        A -- Approve --> AP[Quote and checkout]
+        A -- Approve --> AP[Decision recorded]
         A -- Request document --> RQ[Customer asked for file]
-        A -- Reject --> RJ[Customer informed]
+        A -- Reject --> RJ[Decision recorded]
     end
 
+    AP -. outside this module .-> Q[Revent sends quote → customer accepts → Grenke request]
     RQ -. re-upload .-> U
 ```
 
@@ -145,6 +146,7 @@ Thresholds marked _(setting)_ live in `scoring_settings`. All are **starting val
 | `NAME_COMPANY` | submit | Company name matches across licence, tax certificate, statements and what was typed | Warn → team |
 | `NAME_SIGNATORY` | submit | Signatory on licence matches passport and Emirates ID | Warn → team |
 | `LICENCE_NUMBER` | submit | Licence number on document = number typed | Warn → team |
+| `TRN_NUMBER` | submit | TRN typed in Company details = TRN on the tax certificate (VAT or Corporate Tax). Skipped when no TRN was typed (the field is optional) | Warn → team |
 | `EMAIL_DOMAIN` | submit | Applicant's work email and signatory's signing email: domains match each other and relate to the company name. Free webmail (gmail, outlook…) is noted, not failed | Warn → team |
 
 Name matching: lower-case, standard spellings (Mohammed / Muhammad / Mohd), drop legal suffixes (LLC, L.L.C., FZE, FZCO, DMCC), compare Arabic text when both sides have it. A name mismatch is never a hard stop.
@@ -191,7 +193,7 @@ Score 0–100, higher = safer. All weights and thresholds live in the `scoring_s
 | Block | Weight | From |
 |---|---|---|
 | Documents complete and readable | 15 | Upload checks |
-| Identity and name consistency | 25 | `NAME_*`, `LICENCE_NUMBER`, `ID_FORMAT`, `EMAIL_DOMAIN` |
+| Identity and name consistency | 25 | `NAME_*`, `LICENCE_NUMBER`, `TRN_NUMBER`, `ID_FORMAT`, `EMAIL_DOMAIN` |
 | Financial health | 50 | Money figures (sub-scores below) |
 | Statement integrity | 10 | `STMT_*` |
 
@@ -249,7 +251,7 @@ How the example adds up: lease 23,681 ÷ 4,500,000 = 52.6 bps → 53 (full, 20).
 | `services` | Name, description |
 | `prices` | Product or service, term (24 / 36 / 48), monthly fils |
 | `users` | Seeded customer and reviewer; role (`customer` / `reviewer`) |
-| `applications` | Owner (customer user), applicant (name, work email, mobile; pre-filled from the seeded applicant), company details typed, signatory name and signing email, term, plan monthly (fils), contract total (fils), route, status, `submitted_at` |
+| `applications` | Owner (customer user), applicant (name, work email, mobile; pre-filled from the seeded applicant), company details typed (name, licence number, year established, issuing authority, emirate, legal form, TRN, registered address, deliver to registered address), signatory (is the applicant, full name, signing email, mobile), term, plan monthly (fils), contract total (fils), route, status, `submitted_at` |
 | `plan_items` | Application, product, quantity, selected services |
 | `documents` | Slot, file key, hashes, page count, status, extracted fields (JSON) |
 | `check_results` | One row per check per run |
@@ -355,6 +357,9 @@ How to use: when an approach is tried, add a row. Status moves `trying` → `ado
 | 22 | 2026-11-10 | "Your account" pre-filled from the seeded applicant | No sign-up in v1 | Owner decision | adopted |
 | 23 | 2026-11-10 | No attribution lines in commits or PRs | Owner preference | Owner decision | adopted |
 | 24 | 2026-11-12 | Browser (e2e) tests run against a production build on port 3100, not the dev server | The dev server builds pages on first visit; 3 parallel workers on a cold start got a half-built page (`Unexpected end of JSON input`) once in 3 runs. A production build also caught the PGlite bundling bug the dev server hid | Full e2e suite (13 tests) passed twice in a row on the production build | adopted |
+| 25 | 2026-11-12 | The module ends at the score card. Review actions only record the reviewer's decision (audit log); quote, Grenke request and Grenke KYC are outside the module | Matches Revent's real flow: Submit → Revent quotes within 1 working day → customer accepts → Grenke request | Owner decision | adopted |
+| 26 | 2026-11-12 | KYC screens follow the live site's fields: company year established, legal form, optional TRN, registered address, delivery tick box; VAT or Corporate Tax certificate; signatory tick box and optional mobile. Year established is not scored | Typed values and documents must match what customers actually see | Owner decision, from live-site screenshots | adopted |
+| 27 | 2026-11-12 | New check `TRN_NUMBER`: typed TRN = TRN on the tax certificate | Same cross-check as `LICENCE_NUMBER`, now that the TRN is typed | Owner decision; tests come with the check | adopted |
 
 ## 10. Later (not v1)
 

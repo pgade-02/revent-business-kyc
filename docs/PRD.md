@@ -43,13 +43,15 @@ The frontend is light but real: a working Next.js app with Postgres and file sto
 | 1 | Plan: products, quantity, services, term (24 / 36 / 48 months) | Yes, simple | Monthly amount feeds affordability; contract total decides the route |
 | 2 | Business verification hub (task list + "x of 5 complete", or "x of 4" when there is no self-disclosure task) | Yes | Entry point to the tasks |
 | 3 | Your account (name, work email, mobile, company) | Read-only, pre-filled from the seeded applicant | Records who applied; feeds the email-domain check |
-| 4 | Company details (name, licence no., authority, emirate) | Yes | Typed values are cross-checked against documents |
-| 5 | Business documents (licence, tax certificate, statements) | Yes | Part 1 checks |
-| 6 | Authorised signatory (name, signing email, passport, Emirates ID front/back) | Yes | Part 1 checks |
+| 4 | Company details (name, licence no., year established, issuing authority, emirate, legal form, TRN (optional), registered address, "deliver to the registered address") | Yes | Typed values are cross-checked against documents |
+| 5 | Business documents (trade licence, tax certificate: VAT **or** Corporate Tax, bank statements for the last 6 months in one file or several) | Yes | Part 1 checks |
+| 6 | Authorised signatory ("I'm the authorised signatory" tick box, full name, email for DocuSign, mobile (optional), passport, Emirates ID front/back) | Yes | Part 1 checks |
 | 7 | Self-disclosure form (plans under AED 40,000) | Yes, upload only | Readable + right type |
 | 8 | Review and submit, then "Verification in progress" | Yes | Triggers Part 2 |
 | 9 | Team: applications list (company, band, status) | Yes, English only | Find cases |
 | 10 | Team: application review page | Yes, English only | Score, reasons, figures, actions |
+
+Fields match the live site's KYC screens (checked 2026-11-12). Year established is stored but is not used in the score (SECURITY §6 allows company age only for fairness monitoring). The live site combines several passport photos into one file; whether v1 does the same is an open question (§9).
 
 The hub shows 5 of the live site's 6 tasks (contact person is left out). For a plan at or above the route threshold there is no self-disclosure task, so the hub shows "x of 4", and the review page shows a "Verification call" card. Nothing else is built for that route.
 
@@ -74,6 +76,7 @@ Not built: home, full catalogue browsing, sign-up with email code, contact perso
 - Social media checks.
 - Automatic approval or rejection.
 - Agents that act on their own (see ARCHITECTURE.md → Later).
+- Everything after the score card: creating and sending the quote (Revent does this within 1 working day of Submit), the customer accepting it, the Grenke request, and Grenke's own KYC. **This module ends at the score card.** Nothing is sent to Grenke.
 
 ## 5. Customer experience (upload)
 
@@ -89,6 +92,8 @@ Each file shows one of these states:
 Rules:
 - Messages say what is wrong and what to do, in one sentence. No technical words, no scores.
 - Every message exists in English and Arabic (right-to-left). Customers only ever see text from a check's `customerMessageKey`, never the reviewer-facing detail.
+- Each file is checked straight after upload, and its message appears under that upload box.
+- On **Continue**, the task shows a short list of anything still marked "Needs a fix" on that task. It never blocks moving on.
 - A failed check never blocks Submit. The customer can still submit, and the reviewer sees the warning.
 - A **missing file** does block Submit. Submit stays disabled until every required slot has a file, and the server also rejects the request with the list of missing slots. No score is computed for an incomplete application.
 
@@ -104,7 +109,7 @@ The team UI is English-only in v1.
 4. **Reasons:** every check that did not pass, each with a link to the document page it came from.
 5. **Money figures:** months covered, average monthly income, lease as % of income, lowest balance, days below zero, returned cheques/debits, existing loan repayments per month (and as % of income). If no customer income is found, lease as % of income is shown as "—" with the reason "No customer income found".
 6. **Document checklist:** each document with pass / warning / fail.
-7. **Actions:** Approve · Request document · Reject. Reject and overrides require a reason.
+7. **Actions:** Approve · Request document · Reject. Reject and overrides require a reason. These buttons **record the reviewer's decision** in the audit log. "Approve" does not create or send a quote; that happens outside this module.
 
 ## 7. Success criteria
 
@@ -136,3 +141,4 @@ Measured on a labelled test set of 30–50 anonymised or synthetic documents.
 - [ ] ID numbers and LLM masking: SECURITY §2 says to mask ID numbers and IBANs before any LLM call, but extraction needs them (`ID_FORMAT`, `LICENCE_NUMBER`). Proposed: code pulls ID-shaped values out with regex and the LLM sees placeholders.
 - [ ] `STMT_BALANCE` status: the check catalogue says "warn", the hard stop counts statements with a balance mismatch. Confirm that a mismatch is recorded as `warn` and the hard stop counts those warnings.
 - [ ] Rendering PDF pages to images (for OCR of image-only pages and for the perceptual hash): which library.
+- [ ] Passport upload: combine several photos into one PDF like the live site (needs a step that builds a PDF from images), or accept up to N separate images in v1?
