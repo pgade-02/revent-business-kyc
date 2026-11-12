@@ -18,7 +18,7 @@ Matches Revent Business so the module can move into their codebase later.
 | AI | `OcrProvider` and `LlmProvider` interfaces. The concrete provider lives behind them and can be swapped. v1 is built against fake providers first |
 | Auth (v1) | One seeded customer and one seeded reviewer. A role switch sets a signed, httpOnly cookie. Every route checks role and ownership on the server; every reviewer action is audit-logged |
 
-**Interfaces and boundaries.** `FileStore`, `OcrProvider`, `LlmProvider` and `PdfTextReader` are TypeScript interfaces defined in `src/kyc/` and passed in as arguments. Their real implementations, and the `sharp`, `pdf-lib` and `pdfjs-dist` libraries, live only in `src/providers/`. This keeps `src/kyc/` pure and testable with fakes.
+**Interfaces and boundaries.** `FileStore`, `OcrProvider`, `LlmProvider`, `PdfTextReader`, `PdfInspector` (page count, encryption, active content; pdf-lib) and `ImageProcessor` (re-encode, strip EXIF, picture fingerprint; sharp) are TypeScript interfaces defined in `src/kyc/interfaces/` and passed in as arguments. Their real implementations, and the `sharp`, `pdf-lib` and `pdfjs-dist` libraries, live only in `src/providers/`. This keeps `src/kyc/` pure and testable with fakes.
 
 ## 2. Flow
 
@@ -284,7 +284,7 @@ src/
   plan/                   Pricing and route. Pure TypeScript
     money.ts              Half-up rounding, VAT, averages in fils, bps ratios
   kyc/                    The module. Pure TypeScript, no Next.js imports
-    interfaces/           FileStore, OcrProvider, LlmProvider, PdfTextReader (types only)
+    interfaces/           FileStore, OcrProvider, LlmProvider, PdfTextReader, PdfInspector, ImageProcessor (types only)
     intake/               store, hash, router
     extraction/           schemas per document type, OCR + LLM calls
     checks/               one file per check
@@ -360,6 +360,8 @@ How to use: when an approach is tried, add a row. Status moves `trying` → `ado
 | 25 | 2026-11-12 | The module ends at the score card. Review actions only record the reviewer's decision (audit log); quote, Grenke request and Grenke KYC are outside the module | Matches Revent's real flow: Submit → Revent quotes within 1 working day → customer accepts → Grenke request | Owner decision | adopted |
 | 26 | 2026-11-12 | KYC screens follow the live site's fields: company year established, legal form, optional TRN, registered address, delivery tick box; VAT or Corporate Tax certificate; signatory tick box and optional mobile. Year established is not scored | Typed values and documents must match what customers actually see | Owner decision, from live-site screenshots | adopted |
 | 27 | 2026-11-12 | New check `TRN_NUMBER`: typed TRN = TRN on the tax certificate | Same cross-check as `LICENCE_NUMBER`, now that the TRN is typed | Owner decision; tests come with the check | adopted |
+| 28 | 2026-11-12 | Two more interfaces, `PdfInspector` (pdf-lib) and `ImageProcessor` (sharp), so intake rules stay pure. Load PDFs with `ignoreEncryption` and read `isEncrypted`, and count pages inside the same error guard | pdf-lib's `EncryptedPDFError` cannot be matched with `instanceof`; pdf-lib loads a fake "%PDF-" file without error and only crashes on `getPageCount()` | `tests/providers/pdf-lib-inspector.test.ts`: encrypted, JavaScript, attachment, submit-form and fake PDFs all reported correctly | adopted |
+| 29 | 2026-11-12 | Picture fingerprint (64-bit average hash) for images only; near-duplicate tolerance 5 bits, from env `UPLOAD_NEAR_DUPLICATE_MAX_BITS` | PDFs need page rendering first (PRD §9). The tolerance is a detection setting, not a risk weight; to be tuned on the eval set | Same image at two sizes ≤ 5 bits apart; inverted image > 20 bits apart | trying |
 
 ## 10. Later (not v1)
 

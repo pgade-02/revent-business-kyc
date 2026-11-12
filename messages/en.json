@@ -39,6 +39,15 @@
     "saveFailed": "We couldn't save your plan. Please try again."
   },
   "Checks": {
-    "DOC_EXPIRED": "This document has expired. Please upload a copy that is still valid."
+    "DOC_EXPIRED": "This document has expired. Please upload a copy that is still valid.",
+    "FILE_DUPLICATE": "You’ve already uploaded this file. Please upload the correct document for this section."
+  },
+  "Upload": {
+    "UNSUPPORTED_TYPE": "This file type isn’t supported. Please upload a PDF, JPG or PNG.",
+    "TOO_LARGE": "This file is too large. Please upload a file under {maxMb} MB.",
+    "TOO_MANY_PAGES": "This file has too many pages (maximum {maxPages}). Please upload only the pages we need.",
+    "PASSWORD_PROTECTED": "This PDF is password-protected. Please upload a copy without a password.",
+    "ACTIVE_CONTENT": "We can’t accept this PDF because it contains interactive content. Please save it as a plain PDF and upload it again.",
+    "UNREADABLE": "We couldn’t open this file. Please upload it again or try a different copy."
   }
 }

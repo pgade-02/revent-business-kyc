@@ -30,7 +30,7 @@ Don't patch around a failure or loosen a test to make it pass.
 - `strict` on. No `any`, no `@ts-ignore`, no non-null `!` without a comment saying why it's safe.
 - Zod schemas at every boundary: API input, AI output, JSON columns. Infer types from schemas.
 - Prefer pure functions. `src/kyc/` and `src/plan/` never import from Next.js, the database client, `src/providers/`, `sharp`, `pdf-lib` or `pdfjs-dist`. They receive data and return data.
-- The `FileStore`, `OcrProvider`, `LlmProvider` and `PdfTextReader` interfaces live in `src/kyc/` and are passed in as arguments. Real implementations (and `sharp`, `pdf-lib`, `pdfjs-dist`) live in `src/providers/`.
+- The `FileStore`, `OcrProvider`, `LlmProvider`, `PdfTextReader`, `PdfInspector` and `ImageProcessor` interfaces live in `src/kyc/interfaces/` and are passed in as arguments. Real implementations (and `sharp`, `pdf-lib`, `pdfjs-dist`) live in `src/providers/`.
 - Expected failures return results (`{ ok: false, reason }`); throw only for bugs.
 
 **Money and dates**
@@ -61,7 +61,7 @@ Don't patch around a failure or loosen a test to make it pass.
 
 - Schema changes only through Drizzle migrations. Never `db:push`.
 - Risk weights and thresholds live in `scoring_settings`, never as constants in code.
-- Upload safety limits (file size, page count) live in `src/config/limits.ts`, read from env with defaults.
+- Upload safety limits (file size, page count, near-duplicate photo tolerance) live in `src/config/limits.ts`, read from env with defaults.
 
 ## 5. AI calls
 
