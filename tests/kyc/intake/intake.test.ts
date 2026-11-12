@@ -57,7 +57,7 @@ describe("intakeFile", () => {
     const result = await intake(pdfBytes);
     expect(result).toEqual({
       ok: true,
-      file: { kind: "pdf", bytes: pdfBytes, pageCount: 2, sha256: sha256Hex(pdfBytes), perceptualHash: null },
+      file: { kind: "pdf", bytes: pdfBytes, pageCount: 2, sha256: sha256Hex(pdfBytes), perceptualHash: null, imageSize: null },
     });
   });
 
@@ -84,8 +84,16 @@ describe("intakeFile", () => {
 });
 
 describe("readUploadLimits", () => {
-  it("defaults to 10 MB, 30 pages and 5 bits", () => {
-    expect(readUploadLimits({})).toEqual({ maxBytes: 10_485_760, maxPages: 30, nearDuplicateMaxBits: 5 });
+  it("has safe defaults when env sets nothing", () => {
+    expect(readUploadLimits({})).toEqual({
+      maxBytes: 10_485_760,
+      maxPages: 30,
+      nearDuplicateMaxBits: 5,
+      minPageTextChars: 20,
+      minDocumentTextChars: 20,
+      minImageSidePx: 500,
+      llmTimeoutMs: 6_000,
+    });
   });
 
   it("takes values from env, and refuses nonsense", () => {

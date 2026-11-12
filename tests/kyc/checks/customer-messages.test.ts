@@ -3,6 +3,7 @@ import ar from "../../../messages/ar.json";
 import en from "../../../messages/en.json";
 import { checkDocExpired } from "@/kyc/checks/doc-expired";
 import { checkFileDuplicate } from "@/kyc/checks/file-duplicate";
+import { DOCUMENT_SLOTS } from "@/kyc/documents/slots";
 import { INTAKE_REJECTIONS } from "@/kyc/intake/intake-file";
 
 // Follows a key like "Checks.DOC_EXPIRED" through the messages file.
@@ -26,6 +27,8 @@ const producedKeys = [
     nearDuplicateMaxBits: 5,
   }).customerMessageKey,
   ...INTAKE_REJECTIONS.map((reason) => `Upload.${reason}`),
+  "Checks.DOC_UNREADABLE",
+  ...DOCUMENT_SLOTS.map((slot) => `Checks.DOC_WRONG_TYPE.${slot}`),
 ];
 
 describe("customer messages produced by checks", () => {

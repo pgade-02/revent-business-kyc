@@ -39,15 +39,25 @@
     "saveFailed": "We couldn't save your plan. Please try again."
   },
   "Checks": {
-    "DOC_EXPIRED": "This document has expired. Please upload a copy that is still valid.",
-    "FILE_DUPLICATE": "You’ve already uploaded this file. Please upload the correct document for this section."
+    "DOC_EXPIRED": "This document has expired. Please upload a valid one.",
+    "FILE_DUPLICATE": "You’ve already uploaded this file. Please upload the right document.",
+    "DOC_UNREADABLE": "Photo not clear. Please upload a sharper, high-resolution photo under {maxMb} MB.",
+    "DOC_WRONG_TYPE": {
+      "trade_licence": "Wrong document. Please upload a valid trade licence.",
+      "tax_certificate": "Wrong document. Please upload a valid VAT or Corporate Tax certificate.",
+      "bank_statement": "Wrong document. Please upload a valid bank statement.",
+      "passport": "Wrong document. Please upload a valid passport.",
+      "emirates_id_front": "Wrong side or document. Please upload the front of the Emirates ID.",
+      "emirates_id_back": "Wrong side or document. Please upload the back of the Emirates ID.",
+      "self_disclosure": "Wrong document. Please upload the signed self-disclosure form."
+    }
   },
   "Upload": {
-    "UNSUPPORTED_TYPE": "This file type isn’t supported. Please upload a PDF, JPG or PNG.",
-    "TOO_LARGE": "This file is too large. Please upload a file under {maxMb} MB.",
-    "TOO_MANY_PAGES": "This file has too many pages (maximum {maxPages}). Please upload only the pages we need.",
-    "PASSWORD_PROTECTED": "This PDF is password-protected. Please upload a copy without a password.",
-    "ACTIVE_CONTENT": "We can’t accept this PDF because it contains interactive content. Please save it as a plain PDF and upload it again.",
-    "UNREADABLE": "We couldn’t open this file. Please upload it again or try a different copy."
+    "UNSUPPORTED_TYPE": "Unsupported file. Please upload a PDF, JPG or PNG.",
+    "TOO_LARGE": "File too large. Please upload a file under {maxMb} MB.",
+    "TOO_MANY_PAGES": "Too many pages. Please upload up to {maxPages} pages.",
+    "PASSWORD_PROTECTED": "This PDF is password-protected. Please upload it without a password.",
+    "ACTIVE_CONTENT": "We can’t accept this PDF. Please save it as a plain PDF and try again.",
+    "UNREADABLE": "This file can’t be opened. Please upload it again."
   }
 }

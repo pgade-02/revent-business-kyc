@@ -22,6 +22,7 @@ export type AcceptedFile = {
   pageCount: number;
   sha256: string; // of the file as uploaded, so the same upload always matches
   perceptualHash: string | null; // images only; PDFs need page rendering (PRD §9 open question)
+  imageSize: { width: number; height: number } | null; // images only; checked by DOC_UNREADABLE
 };
 
 export type IntakeResult = { ok: true; file: AcceptedFile } | { ok: false; reason: IntakeRejection };
@@ -50,7 +51,7 @@ export async function intakeFile({ bytes, limits, pdfInspector, imageProcessor }
     const { pageCount, hasJavaScript, hasEmbeddedFiles, hasFormActions } = inspection.facts;
     if (hasJavaScript || hasEmbeddedFiles || hasFormActions) return { ok: false, reason: "ACTIVE_CONTENT" };
     if (pageCount > limits.maxPages) return { ok: false, reason: "TOO_MANY_PAGES" };
-    return { ok: true, file: { kind, bytes, pageCount, sha256, perceptualHash: null } };
+    return { ok: true, file: { kind, bytes, pageCount, sha256, perceptualHash: null, imageSize: null } };
   }
 
   const processed = await imageProcessor.clean(bytes);
@@ -58,6 +59,13 @@ export async function intakeFile({ bytes, limits, pdfInspector, imageProcessor }
   const { image } = processed;
   return {
     ok: true,
-    file: { kind: image.format, bytes: image.bytes, pageCount: 1, sha256, perceptualHash: image.perceptualHash },
+    file: {
+      kind: image.format,
+      bytes: image.bytes,
+      pageCount: 1,
+      sha256,
+      perceptualHash: image.perceptualHash,
+      imageSize: { width: image.width, height: image.height },
+    },
   };
 }
