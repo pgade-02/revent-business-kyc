@@ -3,7 +3,7 @@ import type { PageText, PdfTextReader } from "../interfaces/pdf-text-reader";
 import type { AcceptedFile } from "../intake/intake-file";
 
 export type ReadPagesInput = {
-  file: Pick<AcceptedFile, "kind" | "bytes" | "pageCount">;
+  file: Pick<AcceptedFile, "kind" | "bytes" | "pageCount" | "picturePages">;
   pdfTextReader: PdfTextReader;
   ocr: OcrProvider;
   minPageTextChars: number; // fewer characters than this = no real text layer on that page
@@ -27,7 +27,11 @@ export async function readPages({ file, pdfTextReader, ocr, minPageTextChars }: 
     text: textLayer.find((page) => page.page === index + 1)?.text ?? "",
   }));
 
-  const ocrPages = pages.filter((page) => page.text.trim().length < minPageTextChars).map((page) => page.page);
+  // A scanned page may carry a scanner app's own hidden text, which can be wrong, so it
+  // always goes to OCR. Other pages go only when they have too little real text.
+  const ocrPages = pages
+    .filter((page) => file.picturePages.includes(page.page) || page.text.trim().length < minPageTextChars)
+    .map((page) => page.page);
   if (ocrPages.length === 0) return { ok: true, pages, ocrPages };
 
   const result = await ocr.read({ bytes: file.bytes, kind: "pdf", pages: ocrPages });

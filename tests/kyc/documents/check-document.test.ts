@@ -10,7 +10,7 @@ import { syntheticTexts } from "../../fixtures/synthetic-documents";
 // A "photo": its bytes only need to be unique, because the fake OCR looks up its text.
 function photo(id: number, size = { width: 1200, height: 800 }): AcceptedFile {
   const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, id]);
-  return { kind: "png", bytes, pageCount: 1, sha256: sha256Hex(bytes), perceptualHash: null, imageSize: size };
+  return { kind: "png", bytes, pageCount: 1, sha256: sha256Hex(bytes), perceptualHash: null, imageSize: size, picturePages: [1] };
 }
 
 function run(slot: CheckDocumentInput["slot"], text: string, overrides: Partial<CheckDocumentInput> = {}) {

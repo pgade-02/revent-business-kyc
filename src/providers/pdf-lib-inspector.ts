@@ -1,6 +1,5 @@
 import {
   decodePDFRawStream,
-  PDFArray,
   PDFDict,
   PDFDocument,
   PDFName,
@@ -11,6 +10,7 @@ import {
   type PDFPage,
 } from "pdf-lib";
 import type { PdfInspection, PdfInspector } from "@/kyc/interfaces/pdf-inspector";
+import { isEmptyPage, isPicturePage } from "./pdf-pages";
 
 const name = (value: string) => PDFName.of(value);
 // Action types that run code, open other files or programs, or send form data away.
@@ -19,9 +19,6 @@ const unsafeActionTypes = [name("JavaScript"), name("Launch"), name("SubmitForm"
 // Adobe apps (Acrobat, Adobe Scan) attach a tiny private JSON note to PDFs they save.
 // It is the only attachment we accept (decision log #39); any other one is refused.
 const ADOBE_NOTE = { relationship: "ADBE_Contact_Private", mimeType: "application/json", maxBytes: 4_096 };
-
-// A page with no images or drawings and an almost empty content stream shows nothing.
-const EMPTY_CONTENT_MAX_BYTES = 24;
 
 function dictionaryOf(object: PDFObject): PDFDict | null {
   if (object instanceof PDFDict) return object;
@@ -63,15 +60,6 @@ function adobeNoteRefs(document: PDFDocument): Set<string> {
   return allowed;
 }
 
-function isEmptyPage(page: PDFPage): boolean {
-  const xObjects = page.node.Resources()?.lookup(name("XObject"));
-  if (xObjects instanceof PDFDict && xObjects.keys().length > 0) return false; // has images or drawings
-  const contents = page.node.Contents();
-  const streams = contents instanceof PDFArray ? contents.asArray().map((item) => page.doc.context.lookup(item)) : [contents];
-  const size = streams.reduce((total, stream) => total + (stream instanceof PDFStream ? stream.getContentsSize() : 0), 0);
-  return size <= EMPTY_CONTENT_MAX_BYTES;
-}
-
 // Looks at every object in the file, including ones hidden inside compressed object
 // streams (pdf-lib unpacks those when it loads), for anything active.
 export const pdfLibInspector: PdfInspector = {
@@ -110,6 +98,7 @@ export const pdfLibInspector: PdfInspector = {
       facts: {
         pageCount: pages.length,
         emptyPageCount: pages.filter(isEmptyPage).length,
+        picturePages: pages.flatMap((page, index) => (isPicturePage(page) ? [index + 1] : [])),
         hasJavaScript,
         hasEmbeddedFiles,
         hasFormActions,

@@ -73,15 +73,25 @@ export async function uploadDocument(
 
 const fileKind = z.enum(["pdf", "png", "jpeg"]);
 
-function toAcceptedFile(document: DocumentRow, bytes: Uint8Array): AcceptedFile {
+// Which pages are scans or photos. Not stored: the PDF is inspected again (quick, no AI),
+// so files uploaded before this rule existed are read the same way.
+async function picturePagesOf(services: DocumentServices, kind: AcceptedFile["kind"], bytes: Uint8Array): Promise<number[]> {
+  if (kind !== "pdf") return [1];
+  const inspection = await services.pdfInspector.inspect(bytes);
+  return inspection.ok ? inspection.facts.picturePages : [];
+}
+
+async function toAcceptedFile(services: DocumentServices, document: DocumentRow, bytes: Uint8Array): Promise<AcceptedFile> {
   const { imageWidth: width, imageHeight: height } = document;
+  const kind = fileKind.parse(document.fileKind);
   return {
-    kind: fileKind.parse(document.fileKind),
+    kind,
     bytes,
     pageCount: document.pageCount,
     sha256: document.sha256,
     perceptualHash: document.perceptualHash,
     imageSize: width !== null && height !== null ? { width, height } : null,
+    picturePages: await picturePagesOf(services, kind, bytes),
   };
 }
 
@@ -113,7 +123,7 @@ export async function processDocument(services: DocumentServices, document: Docu
     const outcome = await checkDocument({
       documentId,
       slot: document.slot,
-      file: toAcceptedFile(document, bytes),
+      file: await toAcceptedFile(services, document, bytes),
       today: todayInDubai(services.now()),
       expiresSoonDays: settings.expiresSoonDays,
       readers: services.readers,

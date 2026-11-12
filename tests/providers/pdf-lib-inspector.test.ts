@@ -1,4 +1,4 @@
-import { PDFDict, PDFDocument, PDFName, PDFString } from "pdf-lib";
+import { PDFDict, PDFDocument, PDFName, PDFString, setTextRenderingMode, TextRenderingMode } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { pdfLibInspector } from "@/providers/pdf-lib-inspector";
 import { makeImagePdf, makeTextImage, makeTextPdf } from "../fixtures/make-files";
@@ -35,7 +35,7 @@ describe("pdfLibInspector", () => {
     const result = await pdfLibInspector.inspect(await makeTextPdf(["Page one text.", "Page two text."]));
     expect(result).toEqual({
       ok: true,
-      facts: { pageCount: 2, emptyPageCount: 0, hasJavaScript: false, hasEmbeddedFiles: false, hasFormActions: false },
+      facts: { pageCount: 2, emptyPageCount: 0, picturePages: [], hasJavaScript: false, hasEmbeddedFiles: false, hasFormActions: false },
     });
   });
 
@@ -44,6 +44,28 @@ describe("pdfLibInspector", () => {
     expect(blank).toMatchObject({ ok: true, facts: { pageCount: 3, emptyPageCount: 2 } });
     const scan = await pdfLibInspector.inspect(await makeImagePdf([await makeTextImage("Scanned page")]));
     expect(scan).toMatchObject({ ok: true, facts: { emptyPageCount: 0 } });
+  });
+
+  it("marks scanned pages as picture pages, and leaves computer-made pages alone", async () => {
+    const scanThenDigital = await PDFDocument.load(await makeImagePdf([await makeTextImage("Scanned page")]));
+    scanThenDigital.addPage().drawText("A computer-made page with a small logo-free layout.", { x: 50, y: 700, size: 11 });
+    expect(await pdfLibInspector.inspect(await scanThenDigital.save())).toMatchObject({ ok: true, facts: { picturePages: [1] } });
+  });
+
+  it("marks a page with invisible text (a scanner app's own OCR layer) as a picture page", async () => {
+    const document = await PDFDocument.create();
+    const page = document.addPage();
+    // Text render mode 3 = invisible, the way scanner apps hide their text over the photo.
+    page.pushOperators(setTextRenderingMode(TextRenderingMode.Invisible));
+    page.drawText("784-1990-0000000-1", { x: 50, y: 700, size: 11 });
+    expect(await pdfLibInspector.inspect(await document.save())).toMatchObject({ ok: true, facts: { picturePages: [1] } });
+  });
+
+  it("does not treat a small logo as a scan", async () => {
+    const document = await PDFDocument.load(await makeTextPdf(["Bank statement text with a logo."]));
+    const logo = await document.embedJpg(await makeTextImage("LOGO", 300, 120));
+    document.getPage(0).drawImage(logo, { x: 400, y: 760, width: 150, height: 60 });
+    expect(await pdfLibInspector.inspect(await document.save())).toMatchObject({ ok: true, facts: { picturePages: [] } });
   });
 
   it("finds JavaScript that runs when the PDF opens", async () => {

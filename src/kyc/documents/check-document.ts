@@ -13,7 +13,7 @@ import type { PdfTextReader } from "../interfaces/pdf-text-reader";
 import { decideDocumentStatus, type DocumentStatus } from "./document-status";
 import type { DocumentSlot } from "./slots";
 
-const SLOTS_WITH_EXPIRY: DocumentSlot[] = ["trade_licence", "passport", "emirates_id_back"];
+const SLOTS_WITH_EXPIRY: DocumentSlot[] = ["trade_licence", "passport", "emirates_id_front", "emirates_id_back"];
 
 export type CheckDocumentInput = {
   documentId: string;

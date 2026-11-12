@@ -2,6 +2,7 @@
 export type PdfFacts = {
   pageCount: number;
   emptyPageCount: number; // pages with no text, images or drawings at all
+  picturePages: number[]; // 1-based pages that are a scan or photo; they always go to OCR
   // Each of these makes the file unsafe to accept (SECURITY §3).
   hasJavaScript: boolean;
   hasEmbeddedFiles: boolean;

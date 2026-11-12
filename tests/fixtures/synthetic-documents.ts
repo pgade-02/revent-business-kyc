@@ -41,7 +41,7 @@ export const syntheticTexts = {
   // Looks like a foreign national ID card: readable, but not a passport.
   foreignIdCard: ["GOVERNMENT OF INDIA", "Aadhaar", "Name: Demo Customer", "XXXX XXXX 1234"].join("\n"),
 
-  emiratesIdFront: ["UNITED ARAB EMIRATES", "RESIDENT IDENTITY CARD", "Name: Demo Customer", "ID Number: 784-1990-0000000-1"].join(
+  emiratesIdFront: ["UNITED ARAB EMIRATES", "RESIDENT IDENTITY CARD", "Name: Demo Customer", "ID Number: 784-1990-0000000-1", "Expiry Date: 2028-02-20"].join(
     "\n",
   ),
 

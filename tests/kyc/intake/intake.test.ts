@@ -12,7 +12,7 @@ const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 const limits = { maxBytes: 1_000, maxPages: 30 };
 
 // Fakes stand in for pdf-lib and sharp, so these tests check only the decisions.
-const cleanFacts: PdfFacts = { pageCount: 2, emptyPageCount: 0, hasJavaScript: false, hasEmbeddedFiles: false, hasFormActions: false };
+const cleanFacts: PdfFacts = { pageCount: 2, emptyPageCount: 0, picturePages: [], hasJavaScript: false, hasEmbeddedFiles: false, hasFormActions: false };
 const pdfSaying = (result: Awaited<ReturnType<PdfInspector["inspect"]>>): PdfInspector => ({ inspect: async () => result });
 const imageProcessor: ImageProcessor = {
   clean: async () => ({
@@ -57,7 +57,7 @@ describe("intakeFile", () => {
     const result = await intake(pdfBytes);
     expect(result).toEqual({
       ok: true,
-      file: { kind: "pdf", bytes: pdfBytes, pageCount: 2, sha256: sha256Hex(pdfBytes), perceptualHash: null, imageSize: null },
+      file: { kind: "pdf", bytes: pdfBytes, pageCount: 2, sha256: sha256Hex(pdfBytes), perceptualHash: null, imageSize: null, picturePages: [] },
     });
   });
 

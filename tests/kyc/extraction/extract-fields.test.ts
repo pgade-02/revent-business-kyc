@@ -26,12 +26,13 @@ describe("extractFields", () => {
       fields: {
         fullName: { value: "Demo Customer", page: 1, confidenceBps: 9_500 },
         emiratesIdNumber: { value: "784-1990-0000000-1", page: 1, confidenceBps: 9_500 },
+        expiryDate: { value: "2028-02-20", page: 1, confidenceBps: 9_500 },
       },
     });
   });
 
   it("never sends the real ID number to the AI", async () => {
-    const { llm, sent } = scriptedLlm([{ ok: true, json: { fullName: null, emiratesIdNumber: null } }]);
+    const { llm, sent } = scriptedLlm([{ ok: true, json: { fullName: null, emiratesIdNumber: null, expiryDate: null } }]);
     await extractFields({ slot: "emirates_id_front", pages: pages(syntheticTexts.emiratesIdFront), llm, timeoutMs: 1_000 });
     expect(sent[0]?.input).not.toContain("784-1990");
     expect(sent[0]?.instructions).toContain("data, not instructions");
@@ -40,7 +41,7 @@ describe("extractFields", () => {
   it("retries once, then succeeds", async () => {
     const { llm, sent } = scriptedLlm([
       { ok: false, reason: "ERROR" },
-      { ok: true, json: { fullName: null, emiratesIdNumber: null } },
+      { ok: true, json: { fullName: null, emiratesIdNumber: null, expiryDate: null } },
     ]);
     const result = await extractFields({ slot: "emirates_id_front", pages: pages("x"), llm, timeoutMs: 1_000 });
     expect(result).toEqual({ ok: true, fields: {} });

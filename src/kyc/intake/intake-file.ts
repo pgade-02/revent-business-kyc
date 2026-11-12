@@ -24,6 +24,7 @@ export type AcceptedFile = {
   sha256: string; // of the file as uploaded, so the same upload always matches
   perceptualHash: string | null; // images only; PDFs need page rendering (PRD §9 open question)
   imageSize: { width: number; height: number } | null; // images only; checked by DOC_UNREADABLE
+  picturePages: number[]; // scans and photos: always read by OCR, never by their hidden text
 };
 
 export type IntakeResult = { ok: true; file: AcceptedFile } | { ok: false; reason: IntakeRejection };
@@ -54,7 +55,8 @@ export async function intakeFile({ bytes, limits, pdfInspector, imageProcessor }
     if (pageCount > limits.maxPages) return { ok: false, reason: "TOO_MANY_PAGES" };
     // Every page blank: nothing to read, and no reason to pay for OCR.
     if (inspection.facts.emptyPageCount === pageCount) return { ok: false, reason: "EMPTY" };
-    return { ok: true, file: { kind, bytes, pageCount, sha256, perceptualHash: null, imageSize: null } };
+    const { picturePages } = inspection.facts;
+    return { ok: true, file: { kind, bytes, pageCount, sha256, perceptualHash: null, imageSize: null, picturePages } };
   }
 
   const processed = await imageProcessor.clean(bytes);
@@ -69,6 +71,7 @@ export async function intakeFile({ bytes, limits, pdfInspector, imageProcessor }
       sha256,
       perceptualHash: image.perceptualHash,
       imageSize: { width: image.width, height: image.height },
+      picturePages: [1],
     },
   };
 }

@@ -18,7 +18,8 @@ export const fieldSchemas = {
   tax_certificate: z.object({ trn: field, companyName: field }),
   bank_statement: z.object({ accountHolder: field, iban: field, periodStart: field, periodEnd: field }),
   passport: z.object({ fullName: field, passportNumber: field, expiryDate: field }),
-  emirates_id_front: z.object({ fullName: field, emiratesIdNumber: field }),
+  // Newer cards print the expiry date on the front; older ones on the back. Both are asked.
+  emirates_id_front: z.object({ fullName: field, emiratesIdNumber: field, expiryDate: field }),
   emirates_id_back: z.object({ expiryDate: field }),
   self_disclosure: z.object({ companyName: field }),
 } satisfies Record<DocumentSlot, z.ZodType>;
