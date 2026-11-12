@@ -37,5 +37,8 @@
     "saving": "Saving your plan…",
     "saved": "Your plan is saved. Business verification comes next.",
     "saveFailed": "We couldn't save your plan. Please try again."
+  },
+  "Checks": {
+    "DOC_EXPIRED": "This document has expired. Please upload a copy that is still valid."
   }
 }
