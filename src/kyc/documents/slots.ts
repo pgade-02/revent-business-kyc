@@ -10,3 +10,7 @@ export const DOCUMENT_SLOTS = [
 ] as const;
 
 export type DocumentSlot = (typeof DOCUMENT_SLOTS)[number];
+
+// Bank statements may come as one file or several (one per month). Every other box
+// holds one file, and a new upload replaces the old one.
+export const slotAllowsSeveralFiles = (slot: DocumentSlot): boolean => slot === "bank_statement";

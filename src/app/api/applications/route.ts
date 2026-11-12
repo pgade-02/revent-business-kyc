@@ -1,5 +1,5 @@
 import { getOrStartCustomerSession } from "@/auth/session";
-import { createApplication } from "@/db/applications";
+import { createApplication } from "@/services/applications";
 import { getAppDatabase } from "@/db/app-db";
 import { planInputSchema } from "@/plan/plan-input";
 

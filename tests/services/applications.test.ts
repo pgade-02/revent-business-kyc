@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApplication } from "@/db/applications";
+import { createApplication } from "@/services/applications";
 import { loadCatalogue } from "@/db/catalogue";
 import { openDatabase, type Database } from "@/db/client";
 import { applications, planItems } from "@/db/schema";

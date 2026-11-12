@@ -1,10 +1,10 @@
 import { pricePlan, type PlanTotals, type PricingFailure } from "@/plan/pricing";
 import type { PlanInput } from "@/plan/plan-input";
 import { routeForContractTotal, type Route } from "@/plan/route";
-import type { Database } from "./client";
-import { loadPriceBook } from "./price-book";
-import { applications, planItems } from "./schema";
-import { loadLatestScoringSettings } from "./scoring-settings";
+import type { Database } from "@/db/client";
+import { loadPriceBook } from "@/db/price-book";
+import { applications, planItems } from "@/db/schema";
+import { loadLatestScoringSettings } from "@/db/scoring-settings";
 
 export type CreateApplicationResult =
   | { ok: true; applicationId: number; totals: PlanTotals; route: Route }

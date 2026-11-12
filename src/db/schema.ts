@@ -1,7 +1,9 @@
 import { sql } from "drizzle-orm";
+import { DOCUMENT_SLOTS } from "@/kyc/documents/slots";
 import {
   boolean,
   check,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -113,3 +115,48 @@ export const planItems = pgTable(
   },
   (table) => [check("plan_items_quantity_positive", sql`${table.quantity} >= 1`)],
 );
+
+export const documentSlot = pgEnum("document_slot", DOCUMENT_SLOTS);
+// "checking" while the file is being read; "failed" if processing crashed (the customer can retry).
+export const documentStatus = pgEnum("document_status", ["checking", "ready", "needs_fix", "needs_review", "failed"]);
+export const checkStatus = pgEnum("check_status", ["pass", "warn", "fail", "skipped"]);
+
+// One row per uploaded file. A file that is replaced keeps its row (replacedAt set),
+// so the reviewer's history and earlier check results stay intact.
+export const documents = pgTable(
+  "documents",
+  {
+    id: serial("id").primaryKey(),
+    applicationId: integer("application_id")
+      .notNull()
+      .references(() => applications.id),
+    slot: documentSlot("slot").notNull(),
+    fileKey: text("file_key").notNull(), // where the FileStore keeps it; never shown to anyone
+    fileKind: text("file_kind").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    pageCount: integer("page_count").notNull(),
+    sha256: text("sha256").notNull(),
+    perceptualHash: text("perceptual_hash"),
+    imageWidth: integer("image_width"), // photos only; DOC_UNREADABLE checks the size
+    imageHeight: integer("image_height"),
+    status: documentStatus("status").notNull().default("checking"),
+    fields: jsonb("fields"), // values read from the document, validated by Zod on the way out
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+    replacedAt: timestamp("replaced_at", { withTimezone: true, mode: "string" }),
+  },
+  (table) => [index("documents_sha256").on(table.sha256), index("documents_application").on(table.applicationId)],
+);
+
+// One row per check per run (ARCHITECTURE §6).
+export const checkResults = pgTable("check_results", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id")
+    .notNull()
+    .references(() => documents.id),
+  code: text("code").notNull(),
+  status: checkStatus("status").notNull(),
+  detail: text("detail").notNull(),
+  evidencePage: integer("evidence_page"),
+  customerMessageKey: text("customer_message_key"),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+});

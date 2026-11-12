@@ -1,8 +1,9 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "@/i18n/navigation";
 import { formatAed } from "@/lib/format-money";
 import type { PlanTotals } from "@/plan/pricing";
 
@@ -53,6 +54,11 @@ export function PlanSummary({ totals, itemCount, saveState, onProceed }: PlanSum
           {saveState === "saved" && t("saved")}
           {saveState === "failed" && <span className="text-destructive">{t("saveFailed")}</span>}
         </p>
+        {saveState === "saved" && (
+          <Link href="/kyc/documents" className={buttonVariants({ variant: "outline" })}>
+            {t("continueToDocuments")}
+          </Link>
+        )}
       </CardFooter>
     </Card>
   );

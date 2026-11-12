@@ -109,7 +109,7 @@ cross-document checks → statement transactions → money figures → score + b
 
 ### Processing model (v1)
 
-No job queue. Upload returns at once with status `processing`. The client calls `POST /api/documents/:id/process` and polls the status. Submit calls `POST /api/applications/:id/assess` the same way. A run that times out marks the item `failed` with a retry. Add a queue only if timeouts are seen in practice (log it in §9).
+No job queue. `POST /api/applications/:id/documents` stores the file and returns at once with status `checking`. The client then calls `POST /api/documents/:id/process`, which runs the checks and answers with the status and customer message keys (no polling needed while one request stays inside the 15 s budget). A file still `checking` after a page reload is shown as failed, so the customer uploads it again. Submit calls `POST /api/applications/:id/assess` the same way. A run that times out marks the item `failed` with a retry. Add a queue only if timeouts are seen in practice (log it in §9).
 
 ## 3. Check catalogue
 
@@ -253,8 +253,8 @@ How the example adds up: lease 23,681 ÷ 4,500,000 = 52.6 bps → 53 (full, 20).
 | `users` | Seeded customer and reviewer; role (`customer` / `reviewer`) |
 | `applications` | Owner (customer user), applicant (name, work email, mobile; pre-filled from the seeded applicant), company details typed (name, licence number, year established, issuing authority, emirate, legal form, TRN, registered address, deliver to registered address), signatory (is the applicant, full name, signing email, mobile), term, plan monthly (fils), contract total (fils), route, status, `submitted_at` |
 | `plan_items` | Application, product, quantity, selected services |
-| `documents` | Slot, file key, hashes, page count, status, extracted fields (JSON) |
-| `check_results` | One row per check per run |
+| `documents` | Application, slot, file key (random name), file kind, size, page count, SHA-256, picture fingerprint, image width and height, status (`checking` / `ready` / `needs_fix` / `needs_review` / `failed`), extracted fields (JSON), `replacedAt`. The original file name is not stored. A new upload in a one-file box marks the old row replaced instead of deleting it |
+| `check_results` | One row per check per run: code, status, reviewer detail, evidence page, customer message key |
 | `transactions` | Date, amount (signed fils), balance, label, page, description (≤ 80 chars, account and card numbers masked) |
 | `assessments` | The output above |
 | `review_actions` | Who, action, reason, timestamp |
@@ -292,7 +292,9 @@ src/
     scoring/              score, band, hard stops
     summary/              LLM summary + template fallback
   providers/              Real implementations of the src/kyc interfaces; the only place sharp, pdf-lib, pdfjs-dist and AI SDKs are imported
-  db/                     Drizzle schema, migrations
+  services/               Glue for one use case: calls src/kyc and src/plan, reads and writes src/db, gets parts from src/providers (app-services.ts chooses them)
+  auth/                   Session cookie, and access checks that limit every lookup to the signed-in customer's own rows
+  db/                     Drizzle schema, migrations, plain data functions
     seed/                 catalogue, prices, scoring settings, one customer, one reviewer, demo scenarios
 messages/                 en.json, ar.json (repo root, next-intl default)
 tests/
@@ -365,6 +367,9 @@ How to use: when an approach is tried, add a row. Status moves `trying` → `ado
 | 30 | 2026-11-12 | `DOC_WRONG_TYPE` decided by code on printed features ("fingerprints") of each slot: passport MRZ `P<`, Emirates ID back MRZ `I?ARE`, Emirates ID number on the front, UAE IBAN on a statement, keywords for licence, tax certificate and self-disclosure. `DOC_UNREADABLE` = fewer than 20 readable characters or a photo whose shorter side is under 500 px (env settings). Both run before the AI, so a wrong or unreadable file never costs an AI call | "AI reads, code decides"; a foreign ID in the passport box or a swapped Emirates ID must be caught even if the AI is wrong. Blur is caught only through "too little text" for now | `tests/kyc/checks/doc-readability.test.ts`; false-alarm rate to be measured on the eval set | trying |
 | 31 | 2026-11-12 | Mask before every LLM call: MRZ lines, Emirates ID, IBAN, card, TRN, account and passport numbers become `[[LABEL_n]]` placeholders; the LLM copies them and code restores the values. Extraction has a code-enforced timeout (6 s default) and one retry; output must match the slot's fixed Zod form, otherwise "Needs review" | Resolves the PRD §9 masking question; keeps the 15 s budget (PRD §7) | `tests/kyc/extraction/*.test.ts`: real numbers never reach the AI, placeholders restored, off-form and hanging AI handled | adopted |
 | 32 | 2026-11-12 | `OcrProvider` receives the whole PDF plus the list of pages without a text layer, instead of page images | The chosen OCR service reads PDFs directly, so no PDF-to-image rendering library is needed for OCR (the perceptual hash for PDFs still needs one, PRD §9) | `tests/kyc/extraction/read-pages.test.ts`: only image-only pages are sent | adopted |
+| 33 | 2026-11-12 | New `src/services/` layer for use-case glue (create an application, upload and process a document); `createApplication` moved there from `src/db/`. Route handlers stay thin; `src/db/` keeps plain data functions | One clear home for code that touches kyc, db and providers together, so none of them depends on the others | Unit tests in `tests/services/`; e2e upload flow | adopted |
+| 34 | 2026-11-12 | The process call answers with the result directly instead of the client polling | One request stays within the 15 s budget; simpler client. Revisit with a queue if timeouts appear (row 2) | `tests/e2e/documents.spec.ts` | adopted |
+| 35 | 2026-11-12 | Until the real OCR/LLM provider is connected, the app's OCR reports "unavailable" (photos and image-only PDFs end as Needs review) and the LLM is the labelled-lines stand-in. Text-layer PDFs are read and checked for real | Honest results instead of invented ones; the provider is swapped in one file, `src/services/app-services.ts` | `tests/services/documents.test.ts` | trying |
 
 ## 10. Later (not v1)
 

@@ -4,9 +4,9 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
-  // PGlite loads its own database engine file from disk; bundling breaks that path,
-  // so Node loads the package as-is.
-  serverExternalPackages: ["@electric-sql/pglite"],
+  // Both load their own engine files from disk at run time (PGlite's database, pdfjs's
+  // worker); bundling breaks those paths, so Node loads these packages as-is.
+  serverExternalPackages: ["@electric-sql/pglite", "pdfjs-dist"],
 };
 
 export default withNextIntl(nextConfig);

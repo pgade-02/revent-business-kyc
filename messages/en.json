@@ -36,7 +36,8 @@
     "proceed": "Proceed to KYC",
     "saving": "Saving your plan…",
     "saved": "Your plan is saved. Business verification comes next.",
-    "saveFailed": "We couldn't save your plan. Please try again."
+    "saveFailed": "We couldn't save your plan. Please try again.",
+    "continueToDocuments": "Continue to business documents"
   },
   "Checks": {
     "DOC_EXPIRED": "This document has expired. Please upload a valid one.",
@@ -59,5 +60,57 @@
     "PASSWORD_PROTECTED": "This PDF is password-protected. Please upload it without a password.",
     "ACTIVE_CONTENT": "We can’t accept this PDF. Please save it as a plain PDF and try again.",
     "UNREADABLE": "This file can’t be opened. Please upload it again."
+  },
+  "Documents": {
+    "businessTitle": "Business documents",
+    "businessSubtitle": "Clear scans or phone photos are fine. Make sure every page is readable.",
+    "identityTitle": "Identity documents",
+    "identitySubtitle": "The authorised signatory’s passport and Emirates ID.",
+    "privacy": "Only Revent’s onboarding team sees your documents.",
+    "noApplication": "Build your plan first, then add your documents.",
+    "buildPlan": "Build your plan",
+    "chooseFile": "Choose file",
+    "chooseFiles": "Choose files",
+    "formats": "PDF, JPG or PNG · up to {maxMb} MB",
+    "fileSummary": "{sizeKb} KB · {pages, plural, one {# page} other {# pages}}",
+    "status": {
+      "uploading": "Uploading…",
+      "checking": "Checking your document…",
+      "ready": "Looks good",
+      "needs_fix": "Needs a fix",
+      "needs_review": "Uploaded",
+      "failed": "Something went wrong. Please try again.",
+      "rejected": "Not uploaded"
+    },
+    "slots": {
+      "trade_licence": {
+        "label": "Trade licence",
+        "hint": "Your current licence, every page."
+      },
+      "tax_certificate": {
+        "label": "Tax registration certificate",
+        "hint": "Your VAT or Corporate Tax certificate. Either one is fine."
+      },
+      "bank_statement": {
+        "label": "Bank statements, last 6 months",
+        "hint": "From your company’s main business account. One file or several."
+      },
+      "passport": {
+        "label": "Passport",
+        "hint": "The photo page of the signatory’s passport."
+      },
+      "emirates_id_front": {
+        "label": "Emirates ID, front",
+        "hint": "The side with the ID number and name."
+      },
+      "emirates_id_back": {
+        "label": "Emirates ID, back",
+        "hint": "The other side of the card."
+      },
+      "self_disclosure": {
+        "label": "Self-disclosure form",
+        "hint": "The completed, signed form."
+      }
+    }
   }
 }
