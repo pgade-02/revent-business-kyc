@@ -55,8 +55,8 @@ export function PlanSummary({ totals, itemCount, saveState, onProceed }: PlanSum
           {saveState === "failed" && <span className="text-destructive">{t("saveFailed")}</span>}
         </p>
         {saveState === "saved" && (
-          <Link href="/kyc/documents" className={buttonVariants({ variant: "outline" })}>
-            {t("continueToDocuments")}
+          <Link href="/kyc" className={buttonVariants({ variant: "outline" })}>
+            {t("continueToVerification")}
           </Link>
         )}
       </CardFooter>

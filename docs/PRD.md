@@ -85,8 +85,8 @@ Each file shows one of these states:
 | State | Meaning | Example message |
 |---|---|---|
 | Checking | Being read | "Checking your document…" |
-| Ready | All checks passed | "Looks good" |
-| Needs a fix | A check failed that the customer can fix | "This looks like the front of your Emirates ID. Please upload the back." |
+| Ready | All checks passed | A small green tick only (screen readers hear "Looks good") |
+| Needs a fix | A check failed that the customer can fix | "Wrong side or document. Please upload the back of the Emirates ID." |
 | Needs review | We couldn't decide; the team will look | No customer message; status stays "Uploaded" |
 
 Rules:

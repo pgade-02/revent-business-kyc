@@ -34,7 +34,8 @@ Every uploaded file is hostile until proven otherwise.
 - **File safety:**
   - Detect the type from content, not the extension.
   - Enforce size and page limits.
-  - Reject encrypted PDFs, and PDFs with JavaScript, embedded files or form actions.
+  - Reject encrypted PDFs, and PDFs with JavaScript, embedded files or form actions. One exception: the small private JSON note that Adobe apps (Acrobat, Adobe Scan) attach to the PDFs they save is accepted, only when it is JSON, tagged `ADBE_Contact_Private`, and at most 4 KB once unpacked. Any other attachment is still rejected (ARCHITECTURE decision log #39).
+  - Reject PDFs whose pages are all blank (no text, images or drawings).
   - Re-encode images with sharp.
   - Never render an uploaded file as HTML.
 - **Validation:** Zod on every API input and every AI output.

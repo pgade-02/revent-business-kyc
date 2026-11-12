@@ -17,6 +17,9 @@ AGENTS.md
 # Local database files
 .data/
 
+# Documents for manual testing, including real ones. Never committed (SECURITY §1).
+test-documents/
+
 # Test output
 test-results/
 playwright-report/

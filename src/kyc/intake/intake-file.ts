@@ -13,6 +13,7 @@ export const INTAKE_REJECTIONS = [
   "PASSWORD_PROTECTED",
   "ACTIVE_CONTENT",
   "UNREADABLE",
+  "EMPTY",
 ] as const;
 export type IntakeRejection = (typeof INTAKE_REJECTIONS)[number];
 
@@ -51,6 +52,8 @@ export async function intakeFile({ bytes, limits, pdfInspector, imageProcessor }
     const { pageCount, hasJavaScript, hasEmbeddedFiles, hasFormActions } = inspection.facts;
     if (hasJavaScript || hasEmbeddedFiles || hasFormActions) return { ok: false, reason: "ACTIVE_CONTENT" };
     if (pageCount > limits.maxPages) return { ok: false, reason: "TOO_MANY_PAGES" };
+    // Every page blank: nothing to read, and no reason to pay for OCR.
+    if (inspection.facts.emptyPageCount === pageCount) return { ok: false, reason: "EMPTY" };
     return { ok: true, file: { kind, bytes, pageCount, sha256, perceptualHash: null, imageSize: null } };
   }
 

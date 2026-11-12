@@ -12,7 +12,7 @@ const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 const limits = { maxBytes: 1_000, maxPages: 30 };
 
 // Fakes stand in for pdf-lib and sharp, so these tests check only the decisions.
-const cleanFacts: PdfFacts = { pageCount: 2, hasJavaScript: false, hasEmbeddedFiles: false, hasFormActions: false };
+const cleanFacts: PdfFacts = { pageCount: 2, emptyPageCount: 0, hasJavaScript: false, hasEmbeddedFiles: false, hasFormActions: false };
 const pdfSaying = (result: Awaited<ReturnType<PdfInspector["inspect"]>>): PdfInspector => ({ inspect: async () => result });
 const imageProcessor: ImageProcessor = {
   clean: async () => ({
@@ -78,6 +78,7 @@ describe("intakeFile", () => {
     ["a PDF with JavaScript", pdfBytes, pdfSaying({ ok: true, facts: { ...cleanFacts, hasJavaScript: true } }), "ACTIVE_CONTENT"],
     ["a PDF with an attachment", pdfBytes, pdfSaying({ ok: true, facts: { ...cleanFacts, hasEmbeddedFiles: true } }), "ACTIVE_CONTENT"],
     ["a PDF with a form action", pdfBytes, pdfSaying({ ok: true, facts: { ...cleanFacts, hasFormActions: true } }), "ACTIVE_CONTENT"],
+    ["a PDF whose pages are all blank", pdfBytes, pdfSaying({ ok: true, facts: { ...cleanFacts, emptyPageCount: 2 } }), "EMPTY"],
   ] as const)("rejects %s", async (_name, bytes, inspector, reason) => {
     expect(await intake(bytes, inspector)).toEqual({ ok: false, reason });
   });

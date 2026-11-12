@@ -5,6 +5,11 @@ const port = 3100;
 
 export default defineConfig({
   testDir: "tests/e2e",
+  // v1 has one seeded customer, and the KYC screens show that customer's latest
+  // application. Tests running side by side would keep replacing each other's
+  // "latest application", so they run one at a time.
+  workers: 1,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   use: {

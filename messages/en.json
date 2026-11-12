@@ -37,7 +37,7 @@
     "saving": "Saving your plan…",
     "saved": "Your plan is saved. Business verification comes next.",
     "saveFailed": "We couldn't save your plan. Please try again.",
-    "continueToDocuments": "Continue to business documents"
+    "continueToVerification": "Continue to business verification"
   },
   "Checks": {
     "DOC_EXPIRED": "This document has expired. Please upload a valid one.",
@@ -59,16 +59,13 @@
     "TOO_MANY_PAGES": "Too many pages. Please upload up to {maxPages} pages.",
     "PASSWORD_PROTECTED": "This PDF is password-protected. Please upload it without a password.",
     "ACTIVE_CONTENT": "We can’t accept this PDF. Please save it as a plain PDF and try again.",
-    "UNREADABLE": "This file can’t be opened. Please upload it again."
+    "UNREADABLE": "This file can’t be opened. Please upload it again.",
+    "EMPTY": "This file looks empty. Please upload the document."
   },
   "Documents": {
-    "businessTitle": "Business documents",
-    "businessSubtitle": "Clear scans or phone photos are fine. Make sure every page is readable.",
     "identityTitle": "Identity documents",
     "identitySubtitle": "The authorised signatory’s passport and Emirates ID.",
     "privacy": "Only Revent’s onboarding team sees your documents.",
-    "noApplication": "Build your plan first, then add your documents.",
-    "buildPlan": "Build your plan",
     "chooseFile": "Choose file",
     "chooseFiles": "Choose files",
     "formats": "PDF, JPG or PNG · up to {maxMb} MB",
@@ -111,6 +108,62 @@
         "label": "Self-disclosure form",
         "hint": "The completed, signed form."
       }
+    }
+  },
+  "Kyc": {
+    "title": "Business verification",
+    "subtitle": "Our leasing partner needs these details to approve your lease. Do them in any order.",
+    "progress": "{done} of {total} complete",
+    "taskOf": "Task {index} of {total}",
+    "seenBy": "Seen by Revent and our leasing partner",
+    "noApplication": "Build your plan first, then complete your business verification.",
+    "buildPlan": "Build your plan",
+    "reviewAndSubmit": "Review and submit",
+    "finishMore": "{count, plural, =0 {All tasks are done.} one {Finish # more task to continue.} other {Finish # more tasks to continue.}}",
+    "continue": "Continue",
+    "continueAnyway": "Continue anyway",
+    "fixesTitle": "{count, plural, one {# file needs a fix} other {# files need a fix}}",
+    "fixesHint": "You can carry on and fix them later. Our team sees them either way.",
+    "status": {
+      "completed": "Completed",
+      "in_progress": "In progress",
+      "not_started": "Not started",
+      "needs_fix": "Needs a fix",
+      "coming_soon": "Coming soon"
+    },
+    "tasks": {
+      "account": {
+        "title": "Your account",
+        "summary": "How you sign in, and our main contact for this application.",
+        "intro": "These details come from your Revent account."
+      },
+      "company": {
+        "title": "Company details",
+        "summary": "Identifies the company that will hold the lease.",
+        "intro": "Enter the details exactly as they appear on your trade licence."
+      },
+      "documents": {
+        "title": "Business documents",
+        "summary": "Shows your company is licensed, tax-registered and trading.",
+        "intro": "Clear scans or phone photos are fine. Make sure every page is readable."
+      },
+      "signatory": {
+        "title": "Authorised signatory",
+        "summary": "The person on your trade licence who signs the lease.",
+        "intro": "The person named as manager or authorised signatory on your trade licence."
+      },
+      "self_disclosure": {
+        "title": "Self-disclosure form",
+        "summary": "A short declaration our leasing partner needs for plans under {threshold}.",
+        "intro": "Upload the completed, signed self-disclosure form."
+      }
+    },
+    "account": {
+      "name": "Full name",
+      "workEmail": "Work email",
+      "mobile": "Mobile",
+      "company": "Company",
+      "notProvided": "Not provided"
     }
   }
 }

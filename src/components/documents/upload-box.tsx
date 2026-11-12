@@ -1,9 +1,10 @@
 "use client";
 
-import { FileIcon, UploadIcon } from "lucide-react";
+import { AlertCircleIcon, CheckCircle2Icon, FileIcon, Loader2Icon, UploadIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
+import { useRouter } from "@/i18n/navigation";
 import type { DocumentSlot } from "@/kyc/documents/slots";
 import { cn } from "@/lib/utils";
 
@@ -27,15 +28,20 @@ type UploadBoxProps = {
   maxPages: number;
 };
 
-const statusColour: Record<FileStatus, string> = {
-  uploading: "text-muted-foreground",
-  checking: "text-muted-foreground",
-  ready: "text-green-700 dark:text-green-400",
-  needs_fix: "text-destructive",
-  needs_review: "text-muted-foreground",
-  failed: "text-destructive",
-  rejected: "text-destructive",
+const statusStyle: Record<FileStatus, { className: string; Icon: typeof CheckCircle2Icon; spin?: boolean }> = {
+  uploading: { className: "text-muted-foreground", Icon: Loader2Icon, spin: true },
+  checking: { className: "text-muted-foreground", Icon: Loader2Icon, spin: true },
+  ready: { className: "text-success", Icon: CheckCircle2Icon },
+  needs_fix: { className: "text-destructive", Icon: AlertCircleIcon },
+  needs_review: { className: "text-muted-foreground", Icon: CheckCircle2Icon },
+  failed: { className: "text-destructive", Icon: AlertCircleIcon },
+  rejected: { className: "text-destructive", Icon: AlertCircleIcon },
 };
+
+function StatusIcon({ status }: { status: FileStatus }) {
+  const { Icon, spin } = statusStyle[status];
+  return <Icon className={cn("size-4", spin && "animate-spin")} aria-hidden />;
+}
 
 // Sends one file through both server steps: upload (store it), then process (check it).
 async function sendFile(applicationId: number, slot: DocumentSlot, file: File): Promise<Partial<ShownFile>> {
@@ -62,6 +68,7 @@ async function sendFile(applicationId: number, slot: DocumentSlot, file: File): 
 export function UploadBox({ applicationId, slot, severalFiles, initialFiles, maxMb, maxPages }: UploadBoxProps) {
   const t = useTranslations();
   const inputId = useId();
+  const router = useRouter();
   const [files, setFiles] = useState<ShownFile[]>(initialFiles);
 
   const update = (key: string, change: Partial<ShownFile>) =>
@@ -73,6 +80,8 @@ export function UploadBox({ applicationId, slot, severalFiles, initialFiles, max
       setFiles((current) => (severalFiles ? [...current, shown] : [shown]));
       update(shown.key, await sendFile(applicationId, slot, file));
     }
+    // Re-reads the task list and progress on the server; this box keeps its own state.
+    router.refresh();
   }
 
   return (
@@ -85,16 +94,20 @@ export function UploadBox({ applicationId, slot, severalFiles, initialFiles, max
       </div>
 
       {files.map((file) => (
-        <div key={file.key} className="flex items-start gap-3 rounded-lg border p-3" data-testid={`file-${slot}`}>
-          <FileIcon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
+        <div key={file.key} className="flex items-start gap-4 rounded-xl border bg-card p-4" data-testid={`file-${slot}`}>
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+            <FileIcon className="size-5" aria-hidden />
+          </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{file.name}</p>
+            <p className="truncate font-medium">{file.name}</p>
             {file.sizeBytes !== null && file.pageCount !== null && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {t("Documents.fileSummary", { sizeKb: Math.max(1, Math.round(file.sizeBytes / 1024)), pages: file.pageCount })}
               </p>
             )}
-            <p role="status" className={cn("text-sm", statusColour[file.status])}>
+            {/* A good file shows only a green tick; the words stay for screen readers. */}
+            <p role="status" className={cn("mt-1 flex items-center gap-1.5 text-sm", statusStyle[file.status].className, file.status === "ready" && "sr-only")}>
+              <StatusIcon status={file.status} />
               {t(`Documents.status.${file.status}`)}
             </p>
             {file.messageKeys.map((key) => (
@@ -103,6 +116,7 @@ export function UploadBox({ applicationId, slot, severalFiles, initialFiles, max
               </p>
             ))}
           </div>
+          {file.status === "ready" && <CheckCircle2Icon className="size-6 shrink-0 text-success" aria-hidden />}
         </div>
       ))}
 

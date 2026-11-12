@@ -16,7 +16,7 @@ import { pdfLibInspector } from "@/providers/pdf-lib-inspector";
 import { pdfjsTextReader } from "@/providers/pdfjs-text-reader";
 import { sharpImageProcessor } from "@/providers/sharp-image-processor";
 import en from "../messages/en.json";
-import { makeTextImage, makeTextPdf } from "../tests/fixtures/make-files";
+import { makeImagePdf, makeTextImage, makeTextPdf } from "../tests/fixtures/make-files";
 import { syntheticTexts as text } from "../tests/fixtures/synthetic-documents";
 
 type Scenario = { name: string; slot: DocumentSlot; fileName: string; make: () => Promise<Uint8Array>; ocrText?: string };
@@ -24,7 +24,8 @@ type Scenario = { name: string; slot: DocumentSlot; fileName: string; make: () =
 const scenarios: Scenario[] = [
   { name: "Digital trade licence", slot: "trade_licence", fileName: "licence.pdf", make: () => makeTextPdf([text.tradeLicence]) },
   { name: "Tax certificate, TRN one digit short", slot: "tax_certificate", fileName: "tax.pdf", make: () => makeTextPdf([text.taxCertificate("10000000000000")]) },
-  { name: "Scanned bank statement (no text layer)", slot: "bank_statement", fileName: "statement-scan.pdf", make: () => makeTextPdf([""]), ocrText: text.bankStatement },
+  { name: "Scanned bank statement (no text layer)", slot: "bank_statement", fileName: "statement-scan.pdf", make: async () => makeImagePdf([await makeTextImage(text.bankStatement)]), ocrText: text.bankStatement },
+  { name: "Blank PDF uploaded as bank statement", slot: "bank_statement", fileName: "blank.pdf", make: () => makeTextPdf([""]) },
   { name: "Invoice uploaded as bank statement", slot: "bank_statement", fileName: "invoice.pdf", make: () => makeTextPdf([text.invoice]) },
   { name: "Passport photo", slot: "passport", fileName: "passport.jpg", make: () => makeTextImage(text.passport("2031-08-14")), ocrText: text.passport("2031-08-14") },
   { name: "Expired passport", slot: "passport", fileName: "passport-expired.jpg", make: () => makeTextImage(text.passport("2025-01-10")), ocrText: text.passport("2025-01-10") },

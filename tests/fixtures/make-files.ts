@@ -18,8 +18,19 @@ export async function makeTextImage(text: string, width = 1200, height = 760): P
   return new Uint8Array(await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toBuffer());
 }
 
+// A "scanned" PDF: each page is only a picture, with no text layer, like a scanner's output.
+export async function makeImagePdf(jpegPages: Uint8Array[]): Promise<Uint8Array> {
+  const document = await PDFDocument.create();
+  for (const jpeg of jpegPages) {
+    const image = await document.embedJpg(jpeg);
+    const page = document.addPage([image.width, image.height]);
+    page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+  }
+  return document.save();
+}
+
 // A real PDF whose pages carry a text layer, so pdfjs reads it exactly like a
-// digitally generated licence or bank statement. An empty string = an image-only page.
+// digitally generated licence or bank statement. An empty string = a blank page.
 export async function makeTextPdf(pageTexts: string[]): Promise<Uint8Array> {
   const document = await PDFDocument.create();
   const font = await document.embedFont(StandardFonts.Helvetica);
