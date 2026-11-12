@@ -354,6 +354,7 @@ How to use: when an approach is tried, add a row. Status moves `trying` → `ado
 | 21 | 2026-11-10 | Per transaction keep date, amount, balance, label, page, description ≤ 80 chars with account and card numbers masked; never store full page text. Transactions are therefore extracted at upload | Store the minimum (SECURITY §1); `STMT_BALANCE` runs at upload | Owner decision | adopted |
 | 22 | 2026-11-10 | "Your account" pre-filled from the seeded applicant | No sign-up in v1 | Owner decision | adopted |
 | 23 | 2026-11-10 | No attribution lines in commits or PRs | Owner preference | Owner decision | adopted |
+| 24 | 2026-11-12 | Browser (e2e) tests run against a production build on port 3100, not the dev server | The dev server builds pages on first visit; 3 parallel workers on a cold start got a half-built page (`Unexpected end of JSON input`) once in 3 runs. A production build also caught the PGlite bundling bug the dev server hid | Full e2e suite (13 tests) passed twice in a row on the production build | adopted |
 
 ## 10. Later (not v1)
 

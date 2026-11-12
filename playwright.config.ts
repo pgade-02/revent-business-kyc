@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = 3000;
+// Its own port, so a dev server you have running on 3000 is never picked up by mistake.
+const port = 3100;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -11,9 +12,11 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "npm run dev",
+    // Test the finished app (all pages built in advance), not the dev server,
+    // which builds pages on first visit and can serve a half-built page under load.
+    command: `npm run build && npm run start -- -p ${port}`,
     port,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    reuseExistingServer: false,
+    timeout: 240_000,
   },
 });
