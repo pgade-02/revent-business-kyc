@@ -109,7 +109,7 @@ cross-document checks → statement transactions → money figures → score + b
 
 ### Processing model (v1)
 
-No job queue. `POST /api/applications/:id/documents` stores the file and returns at once with status `checking`. The client then calls `POST /api/documents/:id/process`, which runs the checks and answers with the status and customer message keys (no polling needed while one request stays inside the 15 s budget). A file still `checking` after a page reload is shown as failed, so the customer uploads it again. Submit calls `POST /api/applications/:id/assess` the same way. A run that times out marks the item `failed` with a retry. Add a queue only if timeouts are seen in practice (log it in §9).
+No job queue. `POST /api/applications/:id/documents` stores the file and returns at once with status `checking`. The client then calls `POST /api/documents/:id/process`, which runs the checks and answers with the status and customer message keys (no polling needed while one request stays inside the 15 s budget). A file still `checking` after a page reload is shown as failed, so the customer uploads it again. Submit calls `POST /api/applications/:id/assess` the same way. A run that times out marks the item `failed` with a retry. Add a queue only if timeouts are seen in practice (log it in §9). Submit runs Part 2 in the same request, after the application is marked submitted, and saves it as a new `assessments` row; if Part 2 fails, the Submit still stands and the failure is logged without document values.
 
 ## 3. Check catalogue
 

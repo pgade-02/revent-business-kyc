@@ -3,7 +3,7 @@ import type { CheckResult } from "@/kyc/checks/check-result";
 import type { FileFingerprint } from "@/kyc/checks/file-duplicate";
 import type { DocumentStatus } from "@/kyc/documents/document-status";
 import { slotAllowsSeveralFiles, type DocumentSlot } from "@/kyc/documents/slots";
-import type { ExtractedFields } from "@/kyc/extraction/extract-fields";
+import { extractedFieldsSchema, type ExtractedFields } from "@/kyc/extraction/extract-fields";
 import type { Database } from "./client";
 import { applications, checkResults, documents } from "./schema";
 
@@ -72,6 +72,16 @@ export async function saveProcessingResult(
     }
     await tx.update(documents).set({ status: run.status, fields: run.fields }).where(eq(documents.id, documentId));
   });
+}
+
+// The fields read from each current file, for the cross-checks after Submit.
+export async function listCurrentDocumentFields(db: Database, applicationId: number) {
+  const rows = await db
+    .select({ id: documents.id, slot: documents.slot, fields: documents.fields })
+    .from(documents)
+    .where(and(eq(documents.applicationId, applicationId), isNull(documents.replacedAt)))
+    .orderBy(documents.id);
+  return rows.map((row) => ({ id: String(row.id), slot: row.slot, fields: extractedFieldsSchema.parse(row.fields ?? {}) }));
 }
 
 export async function markDocumentFailed(db: Database, documentId: number): Promise<void> {

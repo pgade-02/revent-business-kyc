@@ -1,13 +1,16 @@
-import type { z } from "zod";
+import { z } from "zod";
 import type { DocumentSlot } from "../documents/slots";
 import type { LlmProvider, LlmResult } from "../interfaces/llm-provider";
 import type { PageText } from "../interfaces/pdf-text-reader";
-import type { ExtractedField } from "./extracted-field";
+import { extractedFieldSchema, type ExtractedField } from "./extracted-field";
 import { fieldSchemas, type RawField } from "./field-schemas";
 import { maskText, unmask } from "./masking";
 
 export type ExtractedValue = ExtractedField<string> | ExtractedField<readonly string[]>;
 export type ExtractedFields = Readonly<Record<string, ExtractedValue>>;
+
+// For reading the stored JSON column back: a hand-edited row can never feed a check.
+export const extractedFieldsSchema = z.record(z.string(), z.union([extractedFieldSchema(z.string()), extractedFieldSchema(z.array(z.string()))]));
 
 export function textField(fields: ExtractedFields, name: string): ExtractedField<string> | undefined {
   const found = fields[name];

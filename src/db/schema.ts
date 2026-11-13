@@ -175,3 +175,21 @@ export const checkResults = pgTable("check_results", {
   customerMessageKey: text("customer_message_key"),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
 });
+
+// One row per Part 2 run (ARCHITECTURE §2). A resubmit adds a row; old ones are kept.
+// Score, money figures and insights are added by later steps.
+export const assessments = pgTable(
+  "assessments",
+  {
+    id: serial("id").primaryKey(),
+    applicationId: integer("application_id")
+      .notNull()
+      .references(() => applications.id),
+    scoringSettingsVersion: integer("scoring_settings_version")
+      .notNull()
+      .references(() => scoringSettings.version),
+    checks: jsonb("checks").notNull(), // CheckResult[] from the cross-checks, validated by Zod on the way out
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [index("assessments_application").on(table.applicationId)],
+);
