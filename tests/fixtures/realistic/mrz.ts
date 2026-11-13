@@ -1,4 +1,4 @@
-import { checkDigit } from "@/kyc/extraction/emirates-id-mrz";
+import { checkDigit } from "@/kyc/extraction/mrz-check-digit";
 import type { Person } from "./companies";
 
 // Machine-readable zone (ICAO 9303): the "<<<" lines at the bottom of passports and
@@ -10,10 +10,13 @@ const pad = (text: string, length: number) => text.padEnd(length, "<").slice(0, 
 
 export { checkDigit };
 
-const mrzName = (person: Person) => `${person.surname.replaceAll(" ", "<")}<<${person.givenNames.replaceAll(" ", "<")}`;
+type Named = Pick<Person, "surname" | "givenNames">;
+export type PassportHolder = Named & Pick<Person, "birthDate" | "sex" | "passportNumber" | "passportExpires"> & { nationality: string };
+
+const mrzName = (person: Named) => `${person.surname.replaceAll(" ", "<")}<<${person.givenNames.replaceAll(" ", "<")}`;
 
 // Passport (TD3): two lines of 44 characters.
-export function passportMrz(person: Person): [string, string] {
+export function passportMrz(person: PassportHolder): [string, string] {
   const number = pad(person.passportNumber, 9);
   const birth = yymmdd(person.birthDate);
   const expiry = yymmdd(person.passportExpires);

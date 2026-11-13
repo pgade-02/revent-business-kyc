@@ -35,7 +35,13 @@ describe("checkDocument", () => {
     const outcome = await run("passport", syntheticTexts.passport("2031-08-14"));
     expect(outcome.status).toBe("ready");
     expect(outcome.fields?.passportNumber?.value).toBe("X1234567");
-    expect(codes(outcome.results)).toEqual(["DOC_UNREADABLE:pass", "DOC_WRONG_TYPE:pass", "DOC_EXPIRED:pass", "DOC_EXPIRES_SOON:pass"]);
+    expect(codes(outcome.results)).toEqual(["DOC_UNREADABLE:pass", "DOC_WRONG_TYPE:pass", "PASSPORT_MRZ:pass", "DOC_EXPIRED:pass", "DOC_EXPIRES_SOON:pass"]);
+  });
+
+  it("takes the passport's expiry from its machine-readable lines when the printed date was not read", async () => {
+    const withoutPrintedExpiry = syntheticTexts.passport("2025-01-10").replace("Date of Expiry: 2025-01-10\n", "");
+    const outcome = await run("passport", withoutPrintedExpiry);
+    expect(outcome.results.find((result) => result.code === "DOC_EXPIRED")?.status).toBe("fail");
   });
 
   it("asks for a fix when the passport has expired", async () => {

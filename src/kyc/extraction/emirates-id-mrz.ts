@@ -3,18 +3,7 @@
 // Only check digits and the expiry date are used. Date of birth, sex and nationality
 // are in these lines too but are never returned (docs/document-specs/emirates-id.md §5).
 
-function characterValue(character: string): number {
-  if (character === "<") return 0;
-  if (/[0-9]/.test(character)) return Number(character);
-  return character.charCodeAt(0) - 55; // A = 10 … Z = 35
-}
-
-// ICAO check digit: weights 7, 3, 1 repeating, sum modulo 10.
-export function checkDigit(field: string): string {
-  const weights = [7, 3, 1];
-  const sum = [...field].reduce((total, character, index) => total + characterValue(character) * (weights[index % 3] ?? 0), 0);
-  return String(sum % 10);
-}
+import { checkDigit } from "./mrz-check-digit";
 
 export type EmiratesIdMrz = { line1: string; line2: string };
 

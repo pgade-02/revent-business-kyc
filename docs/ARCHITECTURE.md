@@ -139,6 +139,7 @@ Thresholds marked _(setting)_ live in `scoring_settings`. All are **starting val
 | `DOC_WRONG_TYPE` | upload | Document fingerprints don't match the slot (e.g. no IBAN on a "statement", EID front in back slot) | Needs a fix |
 | `DOC_EXPIRED` | upload | Expiry date before today (Dubai) | Needs a fix |
 | `DOC_EXPIRES_SOON` | upload | Expires within `expiresSoonDays` _(setting, 60)_ days | Warn → team |
+| `PASSPORT_MRZ` | upload | Every check digit in the passport's machine-readable lines is correct. Expiry is taken from these lines when the printed date was not read | Needs a fix (clearer photo) |
 | `ID_FORMAT` | upload | Emirates ID starts 784 (15 digits), TRN 15 digits, IBAN starts AE with valid checksum | Warn → team |
 | `STMT_BALANCE` | upload | Each row: previous balance + in − out = balance; statement: opening + in − out = closing | Warn → team (could be misread or edited) |
 | `STMT_COVERAGE` | upload, re-run at submit | Statements together cover the `statementMonthsRequired` _(setting, 6)_ full calendar months before the submit month. At upload (not yet submitted) the current Dubai month stands in for the submit month | Needs a fix ("add October") |

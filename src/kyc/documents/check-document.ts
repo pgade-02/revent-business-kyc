@@ -6,8 +6,10 @@ import { checkDocWrongType } from "../checks/doc-wrong-type";
 import { checkEidDates } from "../checks/eid-dates";
 import { checkIdFormat } from "../checks/id-format";
 import { checkMrzCheckDigits } from "../checks/mrz-check-digits";
+import { checkPassportMrz } from "../checks/passport-mrz";
 import { findEmiratesIdMrz, mrzExpiryDate } from "../extraction/emirates-id-mrz";
 import { extractFields, textField, type ExtractedFields } from "../extraction/extract-fields";
+import { findPassportMrz, passportMrzExpiryDate } from "../extraction/passport-mrz";
 import { readPages } from "../extraction/read-pages";
 import type { AcceptedFile } from "../intake/intake-file";
 import type { LlmProvider } from "../interfaces/llm-provider";
@@ -42,15 +44,17 @@ export type CheckDocumentOutcome = {
   problem: "OCR_FAILED" | "LLM_UNAVAILABLE" | "INVALID_OUTPUT" | null; // why reading failed, for logs
 };
 
-// The back of a current card prints no expiry date; code takes it from the
-// machine-readable lines instead (docs/document-specs/emirates-id.md).
-function findMrz(pages: PageText[]) {
+function findOnPage<T>(pages: PageText[], find: (text: string) => T | null) {
   for (const page of pages) {
-    const mrz = findEmiratesIdMrz(page.text);
+    const mrz = find(page.text);
     if (mrz) return { mrz, page: page.page };
   }
   return null;
 }
+
+// Code reads expiry from the machine-readable lines when the printed date was not read;
+// the back of a current Emirates ID prints none (docs/document-specs/emirates-id.md).
+const fromMrz = (value: string, page: number) => ({ value, page, confidenceBps: 10_000 });
 
 function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields, pages: PageText[]): CheckResult[] {
   const { documentId, slot, today, expiresSoonDays } = input;
@@ -58,9 +62,14 @@ function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields, pages: 
   let expiryDate = textField(fields, "expiryDate");
 
   if (slot === "emirates_id_back") {
-    const found = findMrz(pages);
+    const found = findOnPage(pages, findEmiratesIdMrz);
     results.push(checkMrzCheckDigits(documentId, found));
-    if (!expiryDate && found) expiryDate = { value: mrzExpiryDate(found.mrz), page: found.page, confidenceBps: 10_000 };
+    if (!expiryDate && found) expiryDate = fromMrz(mrzExpiryDate(found.mrz), found.page);
+  }
+  if (slot === "passport") {
+    const found = findOnPage(pages, findPassportMrz);
+    results.push(checkPassportMrz(documentId, found));
+    if (!expiryDate && found) expiryDate = fromMrz(passportMrzExpiryDate(found.mrz), found.page);
   }
   if (slot === "emirates_id_front") results.push(checkEidDates({ documentId, issueDate: textField(fields, "issueDate"), expiryDate, today }));
   if (SLOTS_WITH_EXPIRY.includes(slot)) {

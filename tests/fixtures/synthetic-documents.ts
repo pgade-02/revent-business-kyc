@@ -2,6 +2,8 @@
 // Each text is what a reader would get from the page, printed as "Label: value"
 // lines the way real documents label their fields.
 
+import { passportMrz } from "./realistic/mrz";
+
 const mrz = (line: string, length: number) => line.padEnd(length, "<");
 
 export const syntheticTexts = {
@@ -42,8 +44,15 @@ export const syntheticTexts = {
       "Name: Demo Customer",
       "Passport No: X1234567",
       `Date of Expiry: ${expiryDate}`,
-      mrz("P<GBRCUSTOMER<<DEMO", 44),
-      "X12345670GBR8001011M3108145<<<<<<<<<<<<<<04",
+      ...passportMrz({
+        surname: "CUSTOMER",
+        givenNames: "DEMO",
+        nationality: "GBR",
+        birthDate: "1980-01-01",
+        sex: "M",
+        passportNumber: "X1234567",
+        passportExpires: expiryDate,
+      }),
     ].join("\n"),
 
   // Looks like a foreign national ID card: readable, but not a passport.
