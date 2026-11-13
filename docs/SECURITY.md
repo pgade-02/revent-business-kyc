@@ -61,4 +61,5 @@ Every uploaded file is hostile until proven otherwise.
 
 - No automatic rejection. Red means "Recommend reject"; a person decides.
 - Inputs never include nationality, gender, age, religion or photos. The passport proves identity only.
+- One narrow exception (decision log #51): code compares date of birth and nationality between the passport and the Emirates ID, read from their machine-readable lines, to confirm they belong to the same person. Only match / different is stored; the values are never stored, logged, sent to the AI or shown. Nationality never affects the score. See `docs/document-specs/cross-checks.md` §7.
 - Review rates by group (free zone vs mainland, Arabic vs English documents, company age) are checked monthly for unfair patterns.

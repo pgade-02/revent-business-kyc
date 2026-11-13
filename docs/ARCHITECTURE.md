@@ -151,6 +151,8 @@ Thresholds marked _(setting)_ live in `scoring_settings`. All are **starting val
 
 Name matching: lower-case, standard spellings (Mohammed / Muhammad / Mohd), drop legal suffixes (LLC, L.L.C., FZE, FZCO, DMCC), compare Arabic text when both sides have it. A name mismatch is never a hard stop.
 
+The full set of submit-stage cross-checks for v1, including the new ones (`EMIRATE_MATCH`, `EID_SIDES_MATCH`, `DOB_MATCH`, `NATIONALITY_MATCH`, `EID_EMPLOYER`, `IBAN_CONSISTENT`, `STMT_CURRENCY`) and the fields they need, is specified in `docs/document-specs/cross-checks.md`. Rows move into this table as they are built.
+
 ## 4. Bank statements
 
 **Transaction labels (v1):**
@@ -387,6 +389,7 @@ How to use: when an approach is tried, add a row. Status moves `trying` → `ado
 | 48 | 2026-11-13 | Refines row 37: Company details and Authorised signatory have forms, validated by Zod in `src/kyc/company` and `src/kyc/signatory` and saved on `applications` (migrations 0004, 0005). Company details is complete once saved. Authorised signatory is complete only when its details are saved and all three identity documents are uploaded; "Needs a fix" still wins. Mobiles are stored as +9715XXXXXXXX | Typed values are what NAME_SIGNATORY, EMAIL_DOMAIN, LICENCE_NUMBER and TRN_NUMBER compare against | `tests/kyc/company-details.test.ts`, `tests/kyc/signatory-details.test.ts`, `tests/kyc/documents/kyc-tasks.test.ts`, `tests/e2e/company.spec.ts`, `tests/e2e/signatory.spec.ts` | adopted |
 | 49 | 2026-11-13 | Refines rows 12 and 48: Submit also waits for the Company details and Authorised signatory forms to be saved, not only for files. Rule in `src/kyc/submit/submit-blockers.ts`, checked again on the server by `POST /api/applications/:id/submit`. Once submitted, uploads and form saves return 409 | The submit-stage cross-checks (`NAME_COMPANY`, `LICENCE_NUMBER`, `NAME_SIGNATORY`, `EMAIL_DOMAIN`) compare documents with the typed values, so they need them | `tests/kyc/submit-blockers.test.ts`, `tests/services/submit-application.test.ts`, `tests/e2e/submit.spec.ts` | adopted |
 | 50 | 2026-11-13 | Refines row 3: the reviewer summary becomes Insights (profile, patterns with evidence, things to check), still written only from computed findings with a template fallback. Adds two shown-not-scored figures (`topPayerShareBps`, `largestBalanceDropBps`), the payer name on income rows, and licence activities in the header. No questions are sent to the customer | A plain summary repeated the card; patterns and pointers give the reviewer something new without letting the AI decide | Owner decision; faithfulness target in §8 | adopted |
+| 51 | 2026-11-13 | Cross-check spec for v1 (`docs/document-specs/cross-checks.md`), cut down from the owner's KYC rulebook. Date of birth and nationality compared match-only from the machine-readable lines (refines row 45 and SECURITY §6); Emirates ID employer read and compared, occupation shown only; licence status, TRN registration and QR checked by the reviewer by hand; activities, addresses, tax type shown only; no power of attorney upload; non-AED statements left out of money figures; no face matching | Keeps every automatic check reliable and explainable, and says plainly what v1 does not check | Owner decision | adopted |
 
 ## 10. Later (not v1)
 

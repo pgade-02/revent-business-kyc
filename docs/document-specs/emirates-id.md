@@ -56,8 +56,9 @@ Our synthetic generator already produces this structure correctly.
 | Front | fullName, emiratesIdNumber, issueDate, expiryDate | **add issueDate** |
 | Back | expiryDate (older cards only) | none |
 
-Not read by the AI: card number, date of birth, nationality, sex, occupation, employer,
-photo. No check needs them, so they are not collected.
+Not read by the AI: card number, date of birth, nationality, sex, photo.
+Employer and occupation are read from the back after decision log #51 (employer for
+`EID_EMPLOYER`, occupation shown to the reviewer only); see `cross-checks.md`.
 The machine-readable lines are parsed by **code**, not the AI, and are masked before any
 AI call. On the current design code takes the back's expiry date from them.
 
@@ -81,11 +82,13 @@ Across front and back (Part 2, after Submit):
 | **EID_SIDES_MATCH** (new) | ID number, expiry and name on the front equal the ones in the back's machine-readable lines | Needs review: front and back may be from different cards |
 | NAME_SIGNATORY (existing plan) | Name on the ID matches the passport and the licence's manager | Needs review |
 
-## 5. Decided: no checks on date of birth, sex or nationality
+## 5. Decided: date of birth and nationality are match-only; sex is never used
 
-The machine-readable lines contain date of birth, sex and nationality. No check compares
-them (not even for consistency), in line with SECURITY §6. `MRZ_CHECK_DIGITS` only tests
-that each check digit is right; it does not look at what the digits mean.
+Changed by decision log #51. Code compares date of birth and nationality between the
+passport's and this card's machine-readable lines (`DOB_MATCH`, `NATIONALITY_MATCH` in
+`cross-checks.md`). Only match / different is stored; the values are never stored, logged,
+sent to the AI or shown, and nationality never affects the score. Sex is not compared.
+`MRZ_CHECK_DIGITS` still only tests that each check digit is right.
 `EID_SIDES_MATCH` compares ID number, expiry and name only.
 
 ## 6. Synthetic template changes
