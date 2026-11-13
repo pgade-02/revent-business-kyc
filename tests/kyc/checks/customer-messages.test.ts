@@ -4,6 +4,7 @@ import en from "../../../messages/en.json";
 import { checkDocExpired } from "@/kyc/checks/doc-expired";
 import { checkFileDuplicate } from "@/kyc/checks/file-duplicate";
 import { checkMrzCheckDigits } from "@/kyc/checks/mrz-check-digits";
+import { checkPassportMrz } from "@/kyc/checks/passport-mrz";
 import { DOCUMENT_SLOTS } from "@/kyc/documents/slots";
 import { INTAKE_REJECTIONS } from "@/kyc/intake/intake-file";
 
@@ -28,9 +29,10 @@ const producedKeys = [
     nearDuplicateMaxBits: 5,
   }).customerMessageKey,
   checkMrzCheckDigits("doc_test", {
-    mrz: { line1: "ILARE0000000000000000000000000", line2: "0000000F0000001UTO<<<<<<<<<<<1" },
+    mrz: { line1: "ILARE0000000000000000000000000", line2: "0000000F0000001UTO<<<<<<<<<<<1", name: null },
     page: 1,
   }).customerMessageKey,
+  checkPassportMrz("doc_test", { mrz: { line2: "X1234567<1UTO8001011M3108145<<<<<<<<<<<<<<01" }, page: 1 }).customerMessageKey,
   ...INTAKE_REJECTIONS.map((reason) => `Upload.${reason}`),
   "Checks.DOC_UNREADABLE",
   ...DOCUMENT_SLOTS.map((slot) => `Checks.DOC_WRONG_TYPE.${slot}`),

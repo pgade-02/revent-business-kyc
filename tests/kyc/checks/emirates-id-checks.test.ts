@@ -36,11 +36,18 @@ describe("EID_DATES", () => {
 });
 
 describe("Emirates ID machine-readable lines", () => {
-  it("are found in OCR text even when spaced out, and give expiry, birth date and nationality", () => {
+  it("are found in OCR text even when spaced out, and give ID number, expiry, birth date, nationality and name", () => {
     const spaced = ocrText.replace(line1, line1.split("").join(" "));
     const mrz = findEmiratesIdMrz(spaced);
     expect(mrz).not.toBeNull();
-    if (mrz) expect(emiratesIdMrzValues(mrz, today)).toEqual({ expiryDate: saraHaddad.emiratesIdExpires, dateOfBirth: saraHaddad.birthDate, nationality: "UTO" });
+    if (mrz)
+      expect(emiratesIdMrzValues(mrz, today)).toEqual({
+        emiratesIdNumber: saraHaddad.emiratesId,
+        expiryDate: saraHaddad.emiratesIdExpires,
+        dateOfBirth: saraHaddad.birthDate,
+        nationality: "UTO",
+        fullName: `${saraHaddad.givenNames} ${saraHaddad.surname}`,
+      });
   });
 
   it("tolerate OCR reading the filler one character too long or short, as seen on real reads", () => {

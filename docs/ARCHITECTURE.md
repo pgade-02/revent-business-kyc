@@ -145,7 +145,12 @@ Thresholds marked _(setting)_ live in `scoring_settings`. All are **starting val
 | `STMT_COVERAGE` | upload, re-run at submit | Statements together cover the `statementMonthsRequired` _(setting, 6)_ full calendar months before the submit month. At upload (not yet submitted) the current Dubai month stands in for the submit month | Needs a fix ("add October") |
 | `STMT_CONTINUITY` | submit | Closing balance of month N = opening balance of month N+1 | Warn → team |
 | `NAME_COMPANY` | submit | Company name matches across licence, tax certificate, statements and what was typed | Warn → team |
-| `NAME_SIGNATORY` | submit | Signatory on licence matches passport and Emirates ID | Warn → team |
+| `NAME_SIGNATORY` | submit | Names in the signatory form, passport and Emirates ID front agree, and the signatory is among the managers on the licence (else "authority not proven"). Names are never quoted in the detail | Warn → team |
+| `EMIRATE_MATCH` | submit | Emirate on the licence = emirate typed | Warn → team |
+| `EID_SIDES_MATCH` | submit | Emirates ID front and back (machine-readable lines) agree on ID number, expiry and name | Warn → team |
+| `DOB_MATCH` | submit | Date of birth in the passport's and Emirates ID's machine-readable lines is the same | Warn → team |
+| `NATIONALITY_MATCH` | submit | Nationality in the same two places is the same. Shown only, never scored | Warn → team |
+| `EID_EMPLOYER` | submit | Employer on the Emirates ID back is this company. Shown only, never scored | Warn → team |
 | `LICENCE_NUMBER` | submit | Licence number on document = number typed | Warn → team |
 | `TRN_NUMBER` | submit | TRN typed in Company details = TRN on the tax certificate (VAT or Corporate Tax). Skipped when no TRN was typed (the field is optional) | Warn → team |
 | `EMAIL_DOMAIN` | submit | Applicant's work email and signatory's signing email: domains match each other and relate to the company name. Free webmail (gmail, outlook…) is noted, not failed | Warn → team |

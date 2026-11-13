@@ -5,7 +5,7 @@
 import { checkDigit } from "./mrz-check-digit";
 import { mrzBirthToIso, mrzCountry, mrzExpiryToIso } from "./mrz-date";
 
-export type EmiratesIdMrz = { line1: string; line2: string };
+export type EmiratesIdMrz = { line1: string; line2: string; name: string | null };
 
 // OCR splits and spaces the lines in different ways, so whitespace is removed first.
 const LINE_1 = /I[A-Z<]ARE[0-9]{9}[0-9][0-9]{15}/;
@@ -19,15 +19,28 @@ function normaliseOptional(optional: string): string | null {
   return optional.length === 11 ? optional : null;
 }
 
+// Line 3 is "SURNAME<<GIVEN<NAMES" padded with "<". It has no check digit, and long names
+// are cut at 30 characters, so it is only compared loosely.
+const LINE_3 = /^([A-Z]+(?:<[A-Z]+)*)<<([A-Z]+(?:<[A-Z]+)*)/;
+
+function nameFrom(line3: RegExpExecArray | null): string | null {
+  if (!line3) return null;
+  const [, surname = "", given = ""] = line3;
+  return `${given} ${surname}`.replaceAll("<", " ");
+}
+
 export function findEmiratesIdMrz(text: string): EmiratesIdMrz | null {
   const compact = text.toUpperCase().replace(/\s+/g, "");
   const line1 = LINE_1.exec(compact);
   if (!line1) return null;
-  const line2 = LINE_2.exec(compact.slice(line1.index + 30));
+  const afterLine1 = compact.slice(line1.index + 30);
+  const line2 = LINE_2.exec(afterLine1);
   if (!line2) return null;
-  const [, fields = "", optional = "", overallCheck = ""] = line2;
+  const [whole, fields = "", optional = "", overallCheck = ""] = line2;
   const fixedOptional = normaliseOptional(optional);
-  return fixedOptional === null ? null : { line1: line1[0], line2: `${fields}${fixedOptional}${overallCheck}` };
+  if (fixedOptional === null) return null;
+  const name = nameFrom(LINE_3.exec(afterLine1.slice(line2.index + whole.length)));
+  return { line1: line1[0], line2: `${fields}${fixedOptional}${overallCheck}`, name };
 }
 
 // The four check digits of a TD1 card. Each entry says which part was checked, not its value.
@@ -42,10 +55,15 @@ export function mrzCheckDigitFailures({ line1, line2 }: EmiratesIdMrz): string[]
   return checks.filter((check) => checkDigit(check.field) !== check.digit).map((check) => check.part);
 }
 
-export function emiratesIdMrzValues({ line2 }: EmiratesIdMrz, today: string) {
+// The ID number is printed in the same 784-YYYY-NNNNNNN-C form as on the front.
+const idNumber = (digits: string) => `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 14)}-${digits.slice(14)}`;
+
+export function emiratesIdMrzValues({ line1, line2, name }: EmiratesIdMrz, today: string): Record<string, string> {
   return {
+    emiratesIdNumber: idNumber(line1.slice(15, 30)),
     expiryDate: mrzExpiryToIso(line2.slice(8, 14)),
     dateOfBirth: mrzBirthToIso(line2.slice(0, 6), today),
     nationality: mrzCountry(line2.slice(15, 18)),
+    ...(name ? { fullName: name } : {}),
   };
 }
