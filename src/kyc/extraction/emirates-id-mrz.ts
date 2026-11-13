@@ -1,9 +1,9 @@
 // The machine-readable lines on the back of an Emirates ID (ICAO 9303, TD1: 3 × 30).
 // Code reads them itself; the AI never sees them (they are masked).
-// Only check digits and the expiry date are used. Date of birth, sex and nationality
-// are in these lines too but are never returned (docs/document-specs/emirates-id.md §5).
+// Sex is in these lines too but is never returned (docs/document-specs/emirates-id.md §5).
 
 import { checkDigit } from "./mrz-check-digit";
+import { mrzBirthToIso, mrzCountry, mrzExpiryToIso } from "./mrz-date";
 
 export type EmiratesIdMrz = { line1: string; line2: string };
 
@@ -42,8 +42,10 @@ export function mrzCheckDigitFailures({ line1, line2 }: EmiratesIdMrz): string[]
   return checks.filter((check) => checkDigit(check.field) !== check.digit).map((check) => check.part);
 }
 
-// Expiry as YYYY-MM-DD. Cards last a few years, so "YY" is always 20YY.
-export function mrzExpiryDate({ line2 }: EmiratesIdMrz): string {
-  const yymmdd = line2.slice(8, 14);
-  return `20${yymmdd.slice(0, 2)}-${yymmdd.slice(2, 4)}-${yymmdd.slice(4, 6)}`;
+export function emiratesIdMrzValues({ line2 }: EmiratesIdMrz, today: string) {
+  return {
+    expiryDate: mrzExpiryToIso(line2.slice(8, 14)),
+    dateOfBirth: mrzBirthToIso(line2.slice(0, 6), today),
+    nationality: mrzCountry(line2.slice(15, 18)),
+  };
 }

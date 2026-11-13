@@ -86,8 +86,8 @@ Across front and back (Part 2, after Submit):
 
 Changed by decision log #51. Code compares date of birth and nationality between the
 passport's and this card's machine-readable lines (`DOB_MATCH`, `NATIONALITY_MATCH` in
-`cross-checks.md`). Only match / different is stored; the values are never stored, logged,
-sent to the AI or shown, and nationality never affects the score. Sex is not compared.
+`cross-checks.md`). They are stored with the card's other fields (decision log #53), never
+logged, sent to the AI or displayed, and nationality never affects the score. Sex is not compared.
 `MRZ_CHECK_DIGITS` still only tests that each check digit is right.
 `EID_SIDES_MATCH` compares ID number, expiry and name only.
 

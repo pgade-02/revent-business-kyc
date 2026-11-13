@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkPassportMrz } from "@/kyc/checks/passport-mrz";
-import { findPassportMrz, passportMrzExpiryDate } from "@/kyc/extraction/passport-mrz";
+import { findPassportMrz, passportMrzValues } from "@/kyc/extraction/passport-mrz";
 import { saraHaddad } from "../../fixtures/realistic/companies";
 import { passportMrz } from "../../fixtures/realistic/mrz";
 
@@ -17,10 +17,10 @@ const replaceAt = (line: string, index: number, character: string) => line.slice
 const otherDigit = (digit: string | undefined) => (digit === "9" ? "8" : "9");
 
 describe("Passport machine-readable lines", () => {
-  it("are found in OCR text even when spaced out, and give the expiry date", () => {
+  it("are found in OCR text even when spaced out, and give expiry, birth date and nationality", () => {
     const mrz = findPassportMrz(ocrText.replace(line2, line2.split("").join(" ")));
     expect(mrz?.line2).toBe(line2);
-    if (mrz) expect(passportMrzExpiryDate(mrz)).toBe(saraHaddad.passportExpires);
+    if (mrz) expect(passportMrzValues(mrz, "2026-11-14")).toEqual({ expiryDate: saraHaddad.passportExpires, dateOfBirth: saraHaddad.birthDate, nationality: "UTO" });
   });
 
   it("tolerate OCR reading the filler one character too long or short", () => {

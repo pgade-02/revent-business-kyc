@@ -1,4 +1,5 @@
 import { checkDigit } from "./mrz-check-digit";
+import { mrzBirthToIso, mrzCountry, mrzExpiryToIso } from "./mrz-date";
 
 // The second machine-readable line of a passport (ICAO 9303, TD3: 2 × 44). Line 1 holds
 // only the document type, issuing country and name, so it is not parsed. Code reads these
@@ -41,8 +42,10 @@ export function passportMrzCheckDigitFailures({ line2 }: PassportMrz): string[] 
   return checks.filter((check) => checkDigit(check.field) !== check.digit).map((check) => check.part);
 }
 
-// Expiry as YYYY-MM-DD. Passports last at most ten years, so "YY" is always 20YY.
-export function passportMrzExpiryDate({ line2 }: PassportMrz): string {
-  const yymmdd = line2.slice(21, 27);
-  return `20${yymmdd.slice(0, 2)}-${yymmdd.slice(2, 4)}-${yymmdd.slice(4, 6)}`;
+export function passportMrzValues({ line2 }: PassportMrz, today: string) {
+  return {
+    expiryDate: mrzExpiryToIso(line2.slice(21, 27)),
+    dateOfBirth: mrzBirthToIso(line2.slice(13, 19), today),
+    nationality: mrzCountry(line2.slice(10, 13)),
+  };
 }

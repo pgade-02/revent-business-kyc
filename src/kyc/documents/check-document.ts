@@ -7,9 +7,10 @@ import { checkEidDates } from "../checks/eid-dates";
 import { checkIdFormat } from "../checks/id-format";
 import { checkMrzCheckDigits } from "../checks/mrz-check-digits";
 import { checkPassportMrz } from "../checks/passport-mrz";
-import { findEmiratesIdMrz, mrzExpiryDate } from "../extraction/emirates-id-mrz";
+import { emiratesIdMrzValues, findEmiratesIdMrz } from "../extraction/emirates-id-mrz";
 import { extractFields, textField, type ExtractedFields } from "../extraction/extract-fields";
-import { findPassportMrz, passportMrzExpiryDate } from "../extraction/passport-mrz";
+import type { ExtractedField } from "../extraction/extracted-field";
+import { findPassportMrz, passportMrzValues } from "../extraction/passport-mrz";
 import { readPages } from "../extraction/read-pages";
 import type { AcceptedFile } from "../intake/intake-file";
 import type { LlmProvider } from "../interfaces/llm-provider";
@@ -52,25 +53,33 @@ function findOnPage<T>(pages: PageText[], find: (text: string) => T | null) {
   return null;
 }
 
-// Code reads expiry from the machine-readable lines when the printed date was not read;
-// the back of a current Emirates ID prints none (docs/document-specs/emirates-id.md).
-const fromMrz = (value: string, page: number) => ({ value, page, confidenceBps: 10_000 });
+type MrzRead = { check: CheckResult; fields: Record<string, ExtractedField<string>> };
 
-function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields, pages: PageText[]): CheckResult[] {
-  const { documentId, slot, today, expiresSoonDays } = input;
-  const results: CheckResult[] = [];
-  let expiryDate = textField(fields, "expiryDate");
+// Values from the machine-readable lines are kept only when every check digit is right,
+// so a misread birth date can never raise a false "different person" warning.
+function mrzRead(check: CheckResult, page: number | undefined, values: Record<string, string> | undefined): MrzRead {
+  if (check.status !== "pass" || page === undefined || !values) return { check, fields: {} };
+  const fields = Object.fromEntries(Object.entries(values).map(([name, value]) => [name, { value, page, confidenceBps: 10_000 }]));
+  return { check, fields };
+}
 
+function readMrz({ documentId, slot, today }: CheckDocumentInput, pages: PageText[]): MrzRead | null {
   if (slot === "emirates_id_back") {
     const found = findOnPage(pages, findEmiratesIdMrz);
-    results.push(checkMrzCheckDigits(documentId, found));
-    if (!expiryDate && found) expiryDate = fromMrz(mrzExpiryDate(found.mrz), found.page);
+    return mrzRead(checkMrzCheckDigits(documentId, found), found?.page, found ? emiratesIdMrzValues(found.mrz, today) : undefined);
   }
   if (slot === "passport") {
     const found = findOnPage(pages, findPassportMrz);
-    results.push(checkPassportMrz(documentId, found));
-    if (!expiryDate && found) expiryDate = fromMrz(passportMrzExpiryDate(found.mrz), found.page);
+    return mrzRead(checkPassportMrz(documentId, found), found?.page, found ? passportMrzValues(found.mrz, today) : undefined);
   }
+  return null;
+}
+
+function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields): CheckResult[] {
+  const { documentId, slot, today, expiresSoonDays } = input;
+  const results: CheckResult[] = [];
+  const expiryDate = textField(fields, "expiryDate");
+
   if (slot === "emirates_id_front") results.push(checkEidDates({ documentId, issueDate: textField(fields, "issueDate"), expiryDate, today }));
   if (SLOTS_WITH_EXPIRY.includes(slot)) {
     results.push(checkDocExpired({ documentId, expiryDate, today }));
@@ -123,5 +132,8 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
   const extraction = await extractFields({ slot, pages: read.pages, llm: readers.llm, timeoutMs: limits.llmTimeoutMs });
   if (!extraction.ok) return outcome([unreadable, wrongType], null, extraction.reason);
 
-  return outcome([unreadable, wrongType, ...fieldChecks(input, extraction.fields, read.pages)], extraction.fields, null);
+  // The printed expiry wins; the back of a current Emirates ID prints none, so the lines fill it in.
+  const mrz = readMrz(input, read.pages);
+  const fields = { ...mrz?.fields, ...extraction.fields };
+  return outcome([unreadable, wrongType, ...(mrz ? [mrz.check] : []), ...fieldChecks(input, fields)], fields, null);
 }

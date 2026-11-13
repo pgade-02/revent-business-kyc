@@ -115,8 +115,9 @@ and `LICENCE_NUMBER` / `TRN_NUMBER` above.
 
 ## 7. Privacy
 
-- Date of birth and nationality are read by **code** from the machine-readable lines,
-  compared in memory, and only `match` / `different` / `could not check` is stored. The
-  values are never stored, logged, sent to the AI or shown.
+- Date of birth and nationality are read by **code** from the machine-readable lines, and
+  only when every check digit is right. They are stored with the document's other fields,
+  never logged or sent to the AI. The reviewer sees `match` / `different` / `could not
+  check` and can open both documents; the values themselves are not displayed.
 - Occupation and employer are stored as read and shown to the reviewer only.
 - The machine-readable lines stay masked before any AI call, as today.

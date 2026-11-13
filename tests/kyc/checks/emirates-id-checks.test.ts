@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkEidDates } from "@/kyc/checks/eid-dates";
 import { checkMrzCheckDigits } from "@/kyc/checks/mrz-check-digits";
-import { findEmiratesIdMrz, mrzExpiryDate } from "@/kyc/extraction/emirates-id-mrz";
+import { emiratesIdMrzValues, findEmiratesIdMrz } from "@/kyc/extraction/emirates-id-mrz";
 import { saraHaddad } from "../../fixtures/realistic/companies";
 import { emiratesIdMrz } from "../../fixtures/realistic/mrz";
 
@@ -36,11 +36,11 @@ describe("EID_DATES", () => {
 });
 
 describe("Emirates ID machine-readable lines", () => {
-  it("are found in OCR text even when spaced out, and give the expiry date", () => {
+  it("are found in OCR text even when spaced out, and give expiry, birth date and nationality", () => {
     const spaced = ocrText.replace(line1, line1.split("").join(" "));
     const mrz = findEmiratesIdMrz(spaced);
     expect(mrz).not.toBeNull();
-    if (mrz) expect(mrzExpiryDate(mrz)).toBe(saraHaddad.emiratesIdExpires);
+    if (mrz) expect(emiratesIdMrzValues(mrz, today)).toEqual({ expiryDate: saraHaddad.emiratesIdExpires, dateOfBirth: saraHaddad.birthDate, nationality: "UTO" });
   });
 
   it("tolerate OCR reading the filler one character too long or short, as seen on real reads", () => {

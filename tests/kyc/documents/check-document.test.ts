@@ -44,6 +44,21 @@ describe("checkDocument", () => {
     expect(outcome.results.find((result) => result.code === "DOC_EXPIRED")?.status).toBe("fail");
   });
 
+  it("saves the passport's birth date and nationality from its machine-readable lines", async () => {
+    const outcome = await run("passport", syntheticTexts.passport("2031-08-14"));
+    expect(outcome.fields?.dateOfBirth?.value).toBe("1980-01-01");
+    expect(outcome.fields?.nationality?.value).toBe("GBR");
+  });
+
+  it("saves nothing from machine-readable lines whose check digits are wrong", async () => {
+    const text = syntheticTexts.passport("2031-08-14");
+    const line2 = text.split("\n").at(-1) ?? "";
+    const edited = text.replace(line2, line2.replace("800101", "800102"));
+    const outcome = await run("passport", edited);
+    expect(outcome.results.find((result) => result.code === "PASSPORT_MRZ")?.status).toBe("fail");
+    expect(outcome.fields?.dateOfBirth).toBeUndefined();
+  });
+
   it("asks for a fix when the passport has expired", async () => {
     const outcome = await run("passport", syntheticTexts.passport("2025-01-10"));
     expect(outcome.status).toBe("needs_fix");
