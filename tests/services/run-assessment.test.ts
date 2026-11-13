@@ -107,6 +107,7 @@ describe("runAssessment", () => {
     expect(assessment?.checks.find((check) => check.code === "STMT_COVERAGE")?.status).toBe("pass");
     expect(assessment?.score?.blocks.financial).toEqual({ bps: 10_000, confidenceBps: 10_000 });
     expect(assessment?.score?.band).toBe("AMBER"); // no upload checks stored in this test, so confidence is below the floor
+    expect(assessment?.insights?.source).toBe("llm");
   });
 
   it("leaves the figures empty, with the reason, when the AI cannot label the rows", async () => {

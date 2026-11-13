@@ -214,6 +214,7 @@ export const assessments = pgTable(
     figures: jsonb("figures"), // MoneyFigures, or null when they could not be computed (figuresProblem says why)
     figuresProblem: text("figures_problem"),
     score: jsonb("score"), // Score: score, band, confidence, hard stops, blocks
+    insights: jsonb("insights"), // Insights: profile, patterns, things to check, source (llm / template)
 
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
   },

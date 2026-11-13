@@ -77,11 +77,30 @@ function labelRows(input: string) {
   });
 }
 
+// Writes insights only from the findings it is given, copying numbers and evidence as-is.
+const findingsShape = z.object({
+  score: z.number(),
+  band: z.string(),
+  notPassed: z.array(z.object({ code: z.string(), detail: z.string(), evidence: z.object({ documentId: z.string(), page: z.number() }).optional() })),
+  figures: z.record(z.string(), z.string()).nullable(),
+});
+
+function insightsFrom(input: string) {
+  const findings = findingsShape.parse(JSON.parse(input));
+  const income = findings.figures ? ` Average monthly income is ${findings.figures.avgMonthlyIncome}.` : "";
+  return {
+    profile: `The business scores ${findings.score} (${findings.band}).${income}`,
+    patterns: findings.notPassed.slice(0, 4).map((check) => ({ text: check.detail, findingCode: check.code, evidence: check.evidence ?? null })),
+    thingsToCheck: findings.notPassed.slice(0, 3).map((check) => `Look at ${check.code}.`),
+  };
+}
+
 export const labelledLinesLlm: LlmProvider = {
   async generateJson({ input, outputSchema }): Promise<LlmResult> {
     if (!(outputSchema instanceof z.ZodObject)) return { ok: false, reason: "ERROR" };
     if ("rows" in outputSchema.shape) return { ok: true, json: { rows: findRows(input) } };
     if ("labels" in outputSchema.shape) return { ok: true, json: { labels: labelRows(input) } };
+    if ("profile" in outputSchema.shape) return { ok: true, json: insightsFrom(input) };
     const json = Object.fromEntries(
       Object.keys(outputSchema.shape).map((key) => {
         const found = findField(input, labels[key]);

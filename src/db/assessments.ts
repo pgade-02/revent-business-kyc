@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { checkResultSchema, type CheckResult } from "@/kyc/checks/check-result";
+import { insightsSchema, type Insights } from "@/kyc/insights/write-insights";
 import { scoreSchema, type Score } from "@/kyc/scoring/score";
 import { moneyFiguresSchema, type MoneyFigures } from "@/kyc/statements/money-figures";
 import type { Database } from "./client";
@@ -13,6 +14,7 @@ export type NewAssessment = {
   figures: MoneyFigures | null;
   figuresProblem: string | null;
   score: Score | null;
+  insights: Insights | null;
 };
 export type SavedAssessment = Omit<NewAssessment, "applicationId"> & { id: number; createdAt: string };
 
@@ -33,6 +35,7 @@ export async function loadLatestAssessment(db: Database, applicationId: number):
     figures: moneyFiguresSchema.nullable().parse(row.figures),
     figuresProblem: row.figuresProblem,
     score: scoreSchema.nullable().parse(row.score),
+    insights: insightsSchema.nullable().parse(row.insights),
     createdAt: row.createdAt,
   };
 }

@@ -8,6 +8,9 @@ import { applications } from "@/db/schema";
 import { loadSignatoryDetails } from "@/db/signatory-details";
 import { todayInDubai } from "@/kyc/dates";
 import type { LlmProvider } from "@/kyc/interfaces/llm-provider";
+import { listField } from "@/kyc/extraction/extract-fields";
+import { buildFindings } from "@/kyc/insights/findings";
+import { writeInsights } from "@/kyc/insights/write-insights";
 import { computeScore } from "@/kyc/scoring/score";
 import { runCrossChecks } from "@/kyc/submit/cross-checks";
 import { statementFigures } from "./statement-figures";
@@ -22,8 +25,8 @@ async function loadSubmitted(db: Database, applicationId: number) {
   return { submitMonth: todayInDubai(new Date(row.submittedAt)).slice(0, 7), planMonthlyFils: row.planMonthlyFils };
 }
 
-// Part 2 after Submit (ARCHITECTURE §2), saved as a new assessment. Insights are added
-// by a later step.
+// Part 2 after Submit (ARCHITECTURE §2): cross-checks, labels and money figures, score,
+// insights. Saved as a new assessment; a resubmit adds another.
 export async function runAssessment(db: Database, applicationId: number, ai: { llm: LlmProvider; timeoutMs: number }): Promise<number> {
   const [documents, company, signatory, { version, settings }, submitted] = await Promise.all([
     listCurrentDocumentFields(db, applicationId),
@@ -47,5 +50,8 @@ export async function runAssessment(db: Database, applicationId: number, ai: { l
   });
   const { figures, problem } = await statementFigures(db, { documents, coverage, planMonthlyFils: submitted.planMonthlyFils, ai });
   const score = computeScore({ uploads: await listLatestUploadResults(db, applicationId), crossChecks: checks, figures, settings });
-  return insertAssessment(db, { applicationId, scoringSettingsVersion: version, checks, figures, figuresProblem: problem, score });
+  const licence = documents.find((document) => document.slot === "trade_licence");
+  const licenceActivities = (licence && listField(licence.fields, "activities")?.value) ?? [];
+  const insights = await writeInsights(buildFindings({ score, checks, figures, figuresProblem: problem, licenceActivities }), ai);
+  return insertAssessment(db, { applicationId, scoringSettingsVersion: version, checks, figures, figuresProblem: problem, score, insights });
 }
