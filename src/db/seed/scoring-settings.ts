@@ -17,4 +17,5 @@ export const startingScoringSettings: ScoringSettings = {
   statementMonthsRequired: 6,
   balanceMismatchHardStopCount: 1,
   routeThresholdFils: 4_000_000, // AED 40,000; basis still an open question in the PRD
+  nameMatch: { matchBps: 9_500, possibleMatchBps: 8_500 }, // Jaro-Winkler, per word (decision log 52)
 };

@@ -43,6 +43,13 @@
       "when": 1794575535896,
       "tag": "0005_signatory_details",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794592980287,
+      "tag": "0006_name_match_settings",
+      "breakpoints": true
     }
   ]
 }

@@ -65,9 +65,12 @@ mismatch has too many innocent causes; revisit after reviewer feedback.
 - **Company names:** lower-case, punctuation removed, legal endings dropped (LLC, L.L.C.,
   FZE, FZCO, FZ-LLC, DMCC, Est., Establishment). Words like "Trading" are kept. Arabic compared with
   Arabic only when both sides have it.
-- **Person names:** same clean-up, plus common spellings treated as equal (Mohammed /
-  Muhammad / Mohd, Abdul / Abd). Word order is ignored; a name with extra middle names
-  matches if all words of the shorter one are in the longer one.
+- **Person names:** same clean-up, then: word order ignored; extra middle names allowed
+  (the shorter name needs at least 2 words); spacing ignored ("Al Mansoori" = "Almansoori").
+  Each word is then paired with its closest word in the other name and scored with
+  Jaro-Winkler; the weakest pair decides: at or above `nameMatch.matchBps` _(setting, 9500)_
+  = match, at or above `nameMatch.possibleMatchBps` _(setting, 8500)_ = possible match
+  (warns the reviewer as a spelling variant), below = different. No list of name spellings.
 - **Numbers** (licence, TRN, ID, IBAN): spaces and dashes removed, then exact.
 - **Dates and codes** (date of birth, nationality, expiry): exact.
 - **Money:** integer fils, exact.

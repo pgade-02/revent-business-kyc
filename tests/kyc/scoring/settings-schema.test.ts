@@ -41,4 +41,9 @@ describe("scoringSettingsSchema", () => {
     const settings = { ...startingScoringSettings, bands: { greenMinScore: 50, amberMinScore: 50 } };
     expect(scoringSettingsSchema.safeParse(settings).success).toBe(false);
   });
+
+  it("rejects a possible-match cut-off at or above the match cut-off", () => {
+    const settings = { ...startingScoringSettings, nameMatch: { matchBps: 9_000, possibleMatchBps: 9_000 } };
+    expect(scoringSettingsSchema.safeParse(settings).success).toBe(false);
+  });
 });

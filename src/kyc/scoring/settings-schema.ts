@@ -30,6 +30,7 @@ export const scoringSettingsSchema = z
     statementMonthsRequired: wholeNumber.min(1),
     balanceMismatchHardStopCount: wholeNumber,
     routeThresholdFils: wholeNumber,
+    nameMatch: z.object({ matchBps: bps, possibleMatchBps: bps }),
   })
   .superRefine((settings, ctx) => {
     const { documents, identity, financial, integrity } = settings.blockWeights;
@@ -43,6 +44,9 @@ export const scoringSettingsSchema = z
     }
     if (settings.bands.greenMinScore <= settings.bands.amberMinScore) {
       ctx.addIssue({ code: "custom", message: "greenMinScore must be above amberMinScore" });
+    }
+    if (settings.nameMatch.possibleMatchBps >= settings.nameMatch.matchBps) {
+      ctx.addIssue({ code: "custom", message: "nameMatch.possibleMatchBps must be below matchBps" });
     }
   });
 
