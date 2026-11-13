@@ -165,6 +165,54 @@
       "mobile": "الجوال",
       "company": "الشركة",
       "notProvided": "غير متوفر"
+    },
+    "companyForm": {
+      "fields": {
+        "companyName": "اسم الشركة",
+        "licenceNumber": "رقم الرخصة التجارية",
+        "yearEstablished": "سنة التأسيس",
+        "issuingAuthority": "جهة إصدار الرخصة",
+        "emirate": "الإمارة",
+        "legalForm": "الشكل القانوني",
+        "trn": "رقم التسجيل الضريبي (اختياري)",
+        "registeredAddress": "العنوان المسجل"
+      },
+      "errors": {
+        "companyName": "أدخل اسم الشركة.",
+        "licenceNumber": "أدخل رقم الرخصة التجارية.",
+        "yearEstablished": "أدخل سنة بين 1900 والسنة الحالية.",
+        "issuingAuthority": "أدخل الجهة التي أصدرت الرخصة.",
+        "emirate": "اختر الإمارة.",
+        "legalForm": "اختر الشكل القانوني.",
+        "trn": "يتكون رقم التسجيل الضريبي من 15 رقمًا.",
+        "registeredAddress": "أدخل العنوان المسجل."
+      },
+      "emirates": {
+        "abu_dhabi": "أبوظبي",
+        "dubai": "دبي",
+        "sharjah": "الشارقة",
+        "ajman": "عجمان",
+        "umm_al_quwain": "أم القيوين",
+        "ras_al_khaimah": "رأس الخيمة",
+        "fujairah": "الفجيرة"
+      },
+      "legalForms": {
+        "llc": "شركة ذات مسؤولية محدودة",
+        "sole_establishment": "مؤسسة فردية",
+        "civil_company": "شركة مدنية",
+        "free_zone_company": "شركة منطقة حرة",
+        "branch": "فرع شركة",
+        "joint_stock": "شركة مساهمة",
+        "partnership": "شركة تضامن"
+      },
+      "choose": "اختر…",
+      "trnHint": "ضريبة القيمة المضافة أو ضريبة الشركات، كما في شهادتك الضريبية.",
+      "deliverToRegisteredAddress": "التوصيل إلى العنوان المسجل",
+      "save": "حفظ البيانات",
+      "saving": "جارٍ الحفظ…",
+      "saved": "تم حفظ البيانات",
+      "fixFields": "يُرجى مراجعة الحقول المحددة.",
+      "saveFailed": "تعذّر حفظ بياناتك. يُرجى المحاولة مرة أخرى."
     }
   }
 }

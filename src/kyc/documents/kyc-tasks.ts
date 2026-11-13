@@ -29,8 +29,12 @@ export function uploadTaskStatus(slots: readonly DocumentSlot[], files: readonly
   return filled === slots.length ? "completed" : "in_progress";
 }
 
-export function taskStatus(task: KycTask, files: readonly FileState[]): TaskStatus {
+// The application as far as the hub needs it. Company details are only ever saved
+// after passing validation, so "saved" means "complete".
+export type TaskInputs = { files: readonly FileState[]; companyDetailsSaved: boolean };
+
+export function taskStatus(task: KycTask, { files, companyDetailsSaved }: TaskInputs): TaskStatus {
   if (task === "account") return "completed"; // pre-filled from the customer's account
-  if (task === "company") return "coming_soon"; // the Company details form is the next step
+  if (task === "company") return companyDetailsSaved ? "completed" : "not_started";
   return uploadTaskStatus(TASK_SLOTS[task] ?? [], files);
 }

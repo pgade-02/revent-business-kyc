@@ -29,6 +29,13 @@
       "when": 1794491352655,
       "tag": "0003_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794574619549,
+      "tag": "0004_company_details",
+      "breakpoints": true
     }
   ]
 }

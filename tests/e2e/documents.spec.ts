@@ -20,11 +20,11 @@ const pdf = async (text: string) => Buffer.from(await makeTextPdf([text]));
 test("the hub opens on the first open task and shows progress", async ({ page }) => {
   await startApplication(page);
   await page.goto("/kyc");
-  await expect(page).toHaveURL(/\/kyc\/documents$/);
+  await expect(page).toHaveURL(/\/kyc\/company$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Business verification");
   await expect(page.getByText("1 of 5 complete").first()).toBeVisible(); // the pre-filled account
-  await expect(page.getByRole("heading", { level: 2 })).toHaveText("Business documents");
-  await expect(page.getByText("Task 3 of 5")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText("Company details");
+  await expect(page.getByText("Task 2 of 5")).toBeVisible();
 });
 
 test("a customer uploads documents and sees each result under its box", async ({ page }) => {

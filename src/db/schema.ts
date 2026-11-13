@@ -94,6 +94,16 @@ export const applications = pgTable(
     scoringSettingsVersion: integer("scoring_settings_version")
       .notNull()
       .references(() => scoringSettings.version),
+    // Company details as typed by the customer (PRD §4, screen 4). Empty until saved.
+    companyName: text("company_name"),
+    licenceNumber: text("licence_number"),
+    yearEstablished: integer("year_established"), // stored, never scored (SECURITY §6)
+    issuingAuthority: text("issuing_authority"),
+    emirate: text("emirate"),
+    legalForm: text("legal_form"),
+    trn: text("trn"),
+    registeredAddress: text("registered_address"),
+    deliverToRegisteredAddress: boolean("deliver_to_registered_address"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
     submittedAt: timestamp("submitted_at", { withTimezone: true, mode: "string" }),
   },

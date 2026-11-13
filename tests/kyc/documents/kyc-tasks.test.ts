@@ -30,7 +30,14 @@ describe("uploadTaskStatus", () => {
 });
 
 describe("taskStatus", () => {
+  const nothing = { files: [], companyDetailsSaved: false };
+
   it("marks the pre-filled account as completed", () => {
-    expect(taskStatus("account", [])).toBe("completed");
+    expect(taskStatus("account", nothing)).toBe("completed");
+  });
+
+  it("marks Company details completed only once they are saved", () => {
+    expect(taskStatus("company", nothing)).toBe("not_started");
+    expect(taskStatus("company", { ...nothing, companyDetailsSaved: true })).toBe("completed");
   });
 });

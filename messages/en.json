@@ -165,6 +165,54 @@
       "mobile": "Mobile",
       "company": "Company",
       "notProvided": "Not provided"
+    },
+    "companyForm": {
+      "fields": {
+        "companyName": "Company name",
+        "licenceNumber": "Trade licence number",
+        "yearEstablished": "Year established",
+        "issuingAuthority": "Licence issuing authority",
+        "emirate": "Emirate",
+        "legalForm": "Legal form",
+        "trn": "Tax registration number (TRN) (optional)",
+        "registeredAddress": "Registered address"
+      },
+      "errors": {
+        "companyName": "Enter the company name.",
+        "licenceNumber": "Enter the trade licence number.",
+        "yearEstablished": "Enter a year between 1900 and this year.",
+        "issuingAuthority": "Enter the authority that issued the licence.",
+        "emirate": "Choose an emirate.",
+        "legalForm": "Choose a legal form.",
+        "trn": "A TRN has 15 digits.",
+        "registeredAddress": "Enter the registered address."
+      },
+      "emirates": {
+        "abu_dhabi": "Abu Dhabi",
+        "dubai": "Dubai",
+        "sharjah": "Sharjah",
+        "ajman": "Ajman",
+        "umm_al_quwain": "Umm Al Quwain",
+        "ras_al_khaimah": "Ras Al Khaimah",
+        "fujairah": "Fujairah"
+      },
+      "legalForms": {
+        "llc": "Limited liability company (LLC)",
+        "sole_establishment": "Sole establishment",
+        "civil_company": "Civil company",
+        "free_zone_company": "Free zone company (FZE / FZ-LLC)",
+        "branch": "Branch of a company",
+        "joint_stock": "Joint stock company",
+        "partnership": "Partnership"
+      },
+      "choose": "Choose…",
+      "trnHint": "VAT or Corporate Tax, as shown on your tax certificate.",
+      "deliverToRegisteredAddress": "Deliver to the registered address",
+      "save": "Save details",
+      "saving": "Saving…",
+      "saved": "Details saved",
+      "fixFields": "Please check the highlighted fields.",
+      "saveFailed": "We couldn’t save your details. Please try again."
     }
   }
 }
