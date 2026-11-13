@@ -71,6 +71,13 @@
       "when": 1794609064893,
       "tag": "0009_labels_and_figures",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794609448558,
+      "tag": "0010_assessment_score",
+      "breakpoints": true
     }
   ]
 }

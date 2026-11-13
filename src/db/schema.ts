@@ -213,6 +213,8 @@ export const assessments = pgTable(
     checks: jsonb("checks").notNull(), // CheckResult[] from the cross-checks, validated by Zod on the way out
     figures: jsonb("figures"), // MoneyFigures, or null when they could not be computed (figuresProblem says why)
     figuresProblem: text("figures_problem"),
+    score: jsonb("score"), // Score: score, band, confidence, hard stops, blocks
+
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
   },
   (table) => [index("assessments_application").on(table.applicationId)],

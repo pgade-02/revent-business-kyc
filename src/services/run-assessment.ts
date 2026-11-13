@@ -2,12 +2,13 @@ import { eq } from "drizzle-orm";
 import { insertAssessment } from "@/db/assessments";
 import type { Database } from "@/db/client";
 import { loadCompanyDetails } from "@/db/company-details";
-import { listCurrentDocumentFields } from "@/db/documents";
+import { listCurrentDocumentFields, listLatestUploadResults } from "@/db/documents";
 import { loadLatestScoringSettings } from "@/db/scoring-settings";
 import { applications } from "@/db/schema";
 import { loadSignatoryDetails } from "@/db/signatory-details";
 import { todayInDubai } from "@/kyc/dates";
 import type { LlmProvider } from "@/kyc/interfaces/llm-provider";
+import { computeScore } from "@/kyc/scoring/score";
 import { runCrossChecks } from "@/kyc/submit/cross-checks";
 import { statementFigures } from "./statement-figures";
 
@@ -21,8 +22,8 @@ async function loadSubmitted(db: Database, applicationId: number) {
   return { submitMonth: todayInDubai(new Date(row.submittedAt)).slice(0, 7), planMonthlyFils: row.planMonthlyFils };
 }
 
-// Part 2 after Submit (ARCHITECTURE §2), saved as a new assessment. Score and insights
-// are added by later steps.
+// Part 2 after Submit (ARCHITECTURE §2), saved as a new assessment. Insights are added
+// by a later step.
 export async function runAssessment(db: Database, applicationId: number, ai: { llm: LlmProvider; timeoutMs: number }): Promise<number> {
   const [documents, company, signatory, { version, settings }, submitted] = await Promise.all([
     listCurrentDocumentFields(db, applicationId),
@@ -45,5 +46,6 @@ export async function runAssessment(db: Database, applicationId: number, ai: { l
     coverage,
   });
   const { figures, problem } = await statementFigures(db, { documents, coverage, planMonthlyFils: submitted.planMonthlyFils, ai });
-  return insertAssessment(db, { applicationId, scoringSettingsVersion: version, checks, figures, figuresProblem: problem });
+  const score = computeScore({ uploads: await listLatestUploadResults(db, applicationId), crossChecks: checks, figures, settings });
+  return insertAssessment(db, { applicationId, scoringSettingsVersion: version, checks, figures, figuresProblem: problem, score });
 }

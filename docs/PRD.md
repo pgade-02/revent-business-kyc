@@ -144,6 +144,6 @@ Measured on a labelled test set of 30–50 anonymised or synthetic documents.
 - [ ] The AED 40,000 route limit: measured on the full-term total excluding VAT, and including services? The site only says "plan under AED 40,000". Kept as a setting until confirmed.
 - [ ] Real prices for Furniture and Office appliances items (only "from" prices are known: AED 37.62 and AED 25.74 per month at 36 months).
 - [x] ID numbers and LLM masking: SECURITY §2 says to mask ID numbers and IBANs before any LLM call, but extraction needs them (`ID_FORMAT`, `LICENCE_NUMBER`). **Decided:** code swaps Emirates ID numbers, IBANs, TRNs, card and account numbers, passport numbers and machine-readable passport/ID lines for placeholders such as `[[EID_1]]`; the LLM copies placeholders and code puts the real values back (ARCHITECTURE decision log #31). Licence numbers are company data and are not masked.
-- [ ] `STMT_BALANCE` status: the check catalogue says "warn", the hard stop counts statements with a balance mismatch. Confirm that a mismatch is recorded as `warn` and the hard stop counts those warnings.
+- [x] `STMT_BALANCE` status: a mismatch is recorded as `warn`, and the hard stop counts statements whose latest `STMT_BALANCE` is a warning (ARCHITECTURE decision log #57).
 - [ ] Rendering PDF pages to images (for OCR of image-only pages and for the perceptual hash): which library.
 - [ ] Passport upload: combine several photos into one PDF like the live site (needs a step that builds a PDF from images), or accept up to N separate images in v1?

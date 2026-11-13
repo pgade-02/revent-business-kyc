@@ -105,6 +105,8 @@ describe("runAssessment", () => {
     expect(assessment?.figuresProblem).toBeNull();
     expect(assessment?.figures).toMatchObject({ monthsCovered: 6, avgMonthlyIncome: companyA.monthlyIncomeFils, existingDebtMonthly: companyA.monthlyLoanRepaymentFils });
     expect(assessment?.checks.find((check) => check.code === "STMT_COVERAGE")?.status).toBe("pass");
+    expect(assessment?.score?.blocks.financial).toEqual({ bps: 10_000, confidenceBps: 10_000 });
+    expect(assessment?.score?.band).toBe("AMBER"); // no upload checks stored in this test, so confidence is below the floor
   });
 
   it("leaves the figures empty, with the reason, when the AI cannot label the rows", async () => {

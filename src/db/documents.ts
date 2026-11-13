@@ -1,8 +1,9 @@
 import { and, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
-import type { CheckResult } from "@/kyc/checks/check-result";
+import { checkResultSchema, type CheckResult } from "@/kyc/checks/check-result";
 import type { FileFingerprint } from "@/kyc/checks/file-duplicate";
 import type { DocumentStatus } from "@/kyc/documents/document-status";
 import { slotAllowsSeveralFiles, type DocumentSlot } from "@/kyc/documents/slots";
+import type { UploadResults } from "@/kyc/scoring/score";
 import type { Transaction } from "@/kyc/statements/transaction";
 import { extractedFieldsSchema, type ExtractedFields } from "@/kyc/extraction/extract-fields";
 import type { Database } from "./client";
@@ -77,6 +78,41 @@ export async function saveProcessingResult(
       );
     }
     await tx.update(documents).set({ status: run.status, fields: run.fields }).where(eq(documents.id, documentId));
+  });
+}
+
+// Each current file's checks from its latest run, for scoring after Submit.
+export async function listLatestUploadResults(db: Database, applicationId: number): Promise<UploadResults[]> {
+  const rows = await db
+    .select({ id: documents.id, slot: documents.slot })
+    .from(documents)
+    .where(and(eq(documents.applicationId, applicationId), isNull(documents.replacedAt)))
+    .orderBy(documents.id);
+  if (rows.length === 0) return [];
+  const results = await db
+    .select()
+    .from(checkResults)
+    .where(inArray(checkResults.documentId, rows.map((row) => row.id)))
+    .orderBy(desc(checkResults.createdAt));
+  return rows.map((row) => {
+    const own = results.filter((result) => result.documentId === row.id);
+    const latestRun = own[0]?.createdAt;
+    const documentId = String(row.id);
+    return {
+      documentId,
+      slot: row.slot,
+      results: own
+        .filter((result) => result.createdAt === latestRun)
+        .map((result) =>
+          checkResultSchema.parse({
+            code: result.code,
+            status: result.status,
+            detail: result.detail,
+            evidence: result.evidencePage === null ? undefined : { documentId, page: result.evidencePage },
+            customerMessageKey: result.customerMessageKey ?? undefined,
+          }),
+        ),
+    };
   });
 }
 
