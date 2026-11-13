@@ -4,12 +4,21 @@ import { checkDocWrongType } from "@/kyc/checks/doc-wrong-type";
 import { syntheticTexts } from "../../fixtures/synthetic-documents";
 
 const pages = (text: string) => [{ page: 1, text }];
-const readability = { documentId: "doc_test", minTextChars: 20, minImageShortSidePx: 500 };
+const readability = { documentId: "doc_test", minTextChars: 20, minImageShortSidePx: 500, minSharpness: 250, sharpness: null };
 
 describe("DOC_UNREADABLE", () => {
   it("fails a photo that is too small, and tells the customer", () => {
     const result = checkDocUnreadable({ ...readability, pages: pages(syntheticTexts.passport("2031-08-14")), imageSize: { width: 640, height: 400 } });
     expect(result).toMatchObject({ status: "fail", customerMessageKey: "Checks.DOC_UNREADABLE" });
+  });
+
+  it("fails a blurred photo before anything is read, and tells the customer", () => {
+    const result = checkDocUnreadable({ ...readability, pages: null, imageSize: { width: 1600, height: 1070 }, sharpness: 160 });
+    expect(result).toMatchObject({ status: "fail", customerMessageKey: "Checks.DOC_UNREADABLE" });
+  });
+
+  it("passes a sharp enough photo before reading, and treats the cut-off itself as sharp enough", () => {
+    expect(checkDocUnreadable({ ...readability, pages: null, imageSize: { width: 1600, height: 1070 }, sharpness: 250 }).status).toBe("pass");
   });
 
   it("fails a document where almost nothing could be read", () => {

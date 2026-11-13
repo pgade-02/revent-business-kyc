@@ -25,7 +25,13 @@ export type CheckDocumentInput = {
   today: string; // Dubai date
   expiresSoonDays: number; // from scoring_settings
   readers: { pdfTextReader: PdfTextReader; ocr: OcrProvider; llm: LlmProvider };
-  limits: { minPageTextChars: number; minDocumentTextChars: number; minImageSidePx: number; llmTimeoutMs: number };
+  limits: {
+    minPageTextChars: number;
+    minDocumentTextChars: number;
+    minImageSidePx: number;
+    minSharpness: number;
+    llmTimeoutMs: number;
+  };
 };
 
 export type CheckDocumentOutcome = {
@@ -71,6 +77,21 @@ function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields, pages: 
 // Cheap code checks run before the AI, so a blurred or wrong document never costs an AI call.
 export async function checkDocument(input: CheckDocumentInput): Promise<CheckDocumentOutcome> {
   const { documentId, slot, file, readers, limits } = input;
+  const unreadableWith = (pages: PageText[] | null) =>
+    checkDocUnreadable({
+      documentId,
+      pages,
+      imageSize: file.imageSize,
+      sharpness: file.sharpness,
+      minTextChars: limits.minDocumentTextChars,
+      minImageShortSidePx: limits.minImageSidePx,
+      minSharpness: limits.minSharpness,
+    });
+
+  // Too small or blurred: ask for a new photo before paying for OCR.
+  const photo = unreadableWith(null);
+  if (photo.status === "fail") return { status: decideDocumentStatus([photo], true), results: [photo], fields: null, ocrPages: [], problem: null };
+
   const read = await readPages({ file, ...readers, minPageTextChars: limits.minPageTextChars });
   if (!read.ok) return { status: "needs_review", results: [], fields: null, ocrPages: [], problem: "OCR_FAILED" };
 
@@ -82,13 +103,7 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
     problem,
   });
 
-  const unreadable = checkDocUnreadable({
-    documentId,
-    pages: read.pages,
-    imageSize: file.imageSize,
-    minTextChars: limits.minDocumentTextChars,
-    minImageShortSidePx: limits.minImageSidePx,
-  });
+  const unreadable = unreadableWith(read.pages);
   if (unreadable.status === "fail") return outcome([unreadable], null, null);
 
   const wrongType = checkDocWrongType({ documentId, slot, pages: read.pages });

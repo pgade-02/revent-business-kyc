@@ -49,4 +49,27 @@ describe("sharpImageProcessor", () => {
     const fake = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
     expect(await sharpImageProcessor.clean(fake)).toEqual({ ok: false, reason: "UNREADABLE" });
   });
+
+  // Small black text on a light card, like an ID card photographed from arm's length.
+  const textCard = () =>
+    sharp(
+      Buffer.from(`<svg width="1600" height="1000" xmlns="http://www.w3.org/2000/svg"><rect width="1600" height="1000" fill="#eef2f6"/>
+        ${Array.from({ length: 12 }, (_, row) => `<text x="80" y="${90 + row * 70}" font-family="Arial" font-size="30" fill="#111">ID Number 784-1988-4821736-2 Name SPECIMEN ${row}</text>`).join("")}
+      </svg>`),
+    );
+
+  it("scores sharp text above the cut-off and the same text blurred below it", async () => {
+    const sharpPhoto = new Uint8Array(await textCard().jpeg().toBuffer());
+    const blurredPhoto = new Uint8Array(await textCard().blur(4).jpeg().toBuffer());
+    const sharpScore = await sharpImageProcessor.measureSharpness(sharpPhoto);
+    const blurredScore = await sharpImageProcessor.measureSharpness(blurredPhoto);
+    expect(sharpScore).toBeGreaterThanOrEqual(250);
+    expect(blurredScore).toBeLessThan(250);
+  });
+
+  it("scores a plain picture with no edges as 0, and a non-image as null", async () => {
+    const plain = await sharp({ create: { width: 800, height: 600, channels: 3, background: "#808080" } }).png().toBuffer();
+    expect(await sharpImageProcessor.measureSharpness(new Uint8Array(plain))).toBe(0);
+    expect(await sharpImageProcessor.measureSharpness(new Uint8Array([1, 2, 3]))).toBeNull();
+  });
 });

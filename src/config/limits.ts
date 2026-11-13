@@ -15,6 +15,10 @@ const limitsFromEnv = z.object({
   READ_MIN_DOCUMENT_TEXT_CHARS: z.coerce.number().int().min(1).default(20),
   // Shorter side of a photo below this = too small to read reliably.
   READ_MIN_IMAGE_SIDE_PX: z.coerce.number().int().min(1).default(500),
+  // Photo sharpness below this = too blurred to read reliably. Set between a real blurred
+  // card that was misread (160) and the softest real scan that read correctly (371);
+  // see decision log #47. Re-tune as more real photos are collected.
+  READ_MIN_SHARPNESS: z.coerce.number().int().min(0).default(250),
   // Per AI call; with one retry this keeps a document inside the 15 s target (PRD §7).
   LLM_TIMEOUT_MS: z.coerce.number().int().min(1).default(6_000),
 });
@@ -26,6 +30,7 @@ export type UploadLimits = {
   minPageTextChars: number;
   minDocumentTextChars: number;
   minImageSidePx: number;
+  minSharpness: number;
   llmTimeoutMs: number;
 };
 
@@ -40,6 +45,7 @@ export function readUploadLimits(env: Record<string, string | undefined>): Uploa
     minPageTextChars: parsed.READ_MIN_PAGE_TEXT_CHARS,
     minDocumentTextChars: parsed.READ_MIN_DOCUMENT_TEXT_CHARS,
     minImageSidePx: parsed.READ_MIN_IMAGE_SIDE_PX,
+    minSharpness: parsed.READ_MIN_SHARPNESS,
     llmTimeoutMs: parsed.LLM_TIMEOUT_MS,
   };
 }

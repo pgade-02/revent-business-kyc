@@ -91,6 +91,8 @@ async function toAcceptedFile(services: DocumentServices, document: DocumentRow,
     sha256: document.sha256,
     perceptualHash: document.perceptualHash,
     imageSize: width !== null && height !== null ? { width, height } : null,
+    // Not stored: measured again (quick, no AI), like picture pages.
+    sharpness: kind === "pdf" ? null : await services.imageProcessor.measureSharpness(bytes),
     picturePages: await picturePagesOf(services, kind, bytes),
   };
 }

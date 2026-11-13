@@ -19,6 +19,7 @@ const imageProcessor: ImageProcessor = {
     ok: true,
     image: { bytes: new Uint8Array([1, 2, 3]), format: "png", width: 1200, height: 800, perceptualHash: "00ff00ff00ff00ff" },
   }),
+  measureSharpness: async () => 2_000,
 };
 const intake = (bytes: Uint8Array, pdfInspector = pdfSaying({ ok: true, facts: cleanFacts })) =>
   intakeFile({ bytes, limits, pdfInspector, imageProcessor });
@@ -57,7 +58,7 @@ describe("intakeFile", () => {
     const result = await intake(pdfBytes);
     expect(result).toEqual({
       ok: true,
-      file: { kind: "pdf", bytes: pdfBytes, pageCount: 2, sha256: sha256Hex(pdfBytes), perceptualHash: null, imageSize: null, picturePages: [] },
+      file: { kind: "pdf", bytes: pdfBytes, pageCount: 2, sha256: sha256Hex(pdfBytes), perceptualHash: null, imageSize: null, sharpness: null, picturePages: [] },
     });
   });
 
@@ -93,6 +94,7 @@ describe("readUploadLimits", () => {
       minPageTextChars: 20,
       minDocumentTextChars: 20,
       minImageSidePx: 500,
+      minSharpness: 250,
       llmTimeoutMs: 6_000,
     });
   });

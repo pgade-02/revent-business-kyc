@@ -8,9 +8,9 @@ import { createBrokenLlm, labelledLinesLlm } from "@/providers/fakes/fake-llm-pr
 import { syntheticTexts } from "../../fixtures/synthetic-documents";
 
 // A "photo": its bytes only need to be unique, because the fake OCR looks up its text.
-function photo(id: number, size = { width: 1200, height: 800 }): AcceptedFile {
+function photo(id: number, size = { width: 1200, height: 800 }, sharpness = 2_000): AcceptedFile {
   const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, id]);
-  return { kind: "png", bytes, pageCount: 1, sha256: sha256Hex(bytes), perceptualHash: null, imageSize: size, picturePages: [1] };
+  return { kind: "png", bytes, pageCount: 1, sha256: sha256Hex(bytes), perceptualHash: null, imageSize: size, sharpness, picturePages: [1] };
 }
 
 function run(slot: CheckDocumentInput["slot"], text: string, overrides: Partial<CheckDocumentInput> = {}) {
@@ -23,7 +23,7 @@ function run(slot: CheckDocumentInput["slot"], text: string, overrides: Partial<
     today: "2026-11-12",
     expiresSoonDays: 60,
     readers: { pdfTextReader: { readPages: async () => [] }, ocr, llm: labelledLinesLlm },
-    limits: { minPageTextChars: 20, minDocumentTextChars: 20, minImageSidePx: 500, llmTimeoutMs: 1_000 },
+    limits: { minPageTextChars: 20, minDocumentTextChars: 20, minImageSidePx: 500, minSharpness: 250, llmTimeoutMs: 1_000 },
     ...overrides,
   });
 }
@@ -57,6 +57,13 @@ describe("checkDocument", () => {
     const outcome = await run("emirates_id_front", syntheticTexts.emiratesIdFront, { file: photo(2, { width: 400, height: 250 }) });
     expect(outcome.status).toBe("needs_fix");
     expect(codes(outcome.results)).toEqual(["DOC_UNREADABLE:fail"]);
+  });
+
+  it("asks for a clearer photo when the picture is blurred, without paying for OCR", async () => {
+    const outcome = await run("emirates_id_front", syntheticTexts.emiratesIdFront, { file: photo(3, undefined, 160) });
+    expect(outcome.status).toBe("needs_fix");
+    expect(codes(outcome.results)).toEqual(["DOC_UNREADABLE:fail"]);
+    expect(outcome.ocrPages).toEqual([]);
   });
 
   it("sends the document for review when the AI answers off-form", async () => {

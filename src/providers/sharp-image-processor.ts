@@ -15,6 +15,48 @@ async function averageHash(bytes: Uint8Array): Promise<string> {
   return bits.toString(16).padStart(16, "0");
 }
 
+// Sharpness = "variance of the Laplacian", measured on the sharpest parts of the photo.
+// 1. Grey, and always the same width, so big and small photos are measured alike.
+// 2. An edge filter (Laplacian): every pixel minus its 4 neighbours. Crisp text gives
+//    strong positive and negative values; blur smears edges so values stay near zero.
+// 3. Split into tiles and take each tile's variance (how spread out the values are).
+// 4. Score = average of the sharpest 10% of tiles: the text, not the empty card or desk.
+const SHARPNESS_WIDTH = 1200;
+const TILE = 50;
+const TOP_SHARE = 0.1;
+const NEUTRAL = 128; // sharp clips filter output to 0–255, so zero is moved to the middle
+
+export async function sharpnessScore(bytes: Uint8Array): Promise<number> {
+  const { data, info } = await sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS })
+    .rotate()
+    .greyscale()
+    .resize({ width: SHARPNESS_WIDTH })
+    .convolve({ width: 3, height: 3, kernel: [0, 1, 0, 1, -4, 1, 0, 1, 0], offset: NEUTRAL })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const variances: number[] = [];
+  for (let top = 0; top + TILE <= info.height; top += TILE) {
+    for (let left = 0; left + TILE <= info.width; left += TILE) {
+      let sum = 0;
+      let sumOfSquares = 0;
+      for (let y = top; y < top + TILE; y += 1) {
+        for (let x = left; x < left + TILE; x += 1) {
+          const value = (data[y * info.width + x] ?? NEUTRAL) - NEUTRAL;
+          sum += value;
+          sumOfSquares += value * value;
+        }
+      }
+      const count = TILE * TILE;
+      variances.push(sumOfSquares / count - (sum / count) ** 2);
+    }
+  }
+  if (variances.length === 0) return 0;
+  variances.sort((a, b) => b - a);
+  const top = variances.slice(0, Math.max(1, Math.round(variances.length * TOP_SHARE)));
+  return Math.round(top.reduce((total, value) => total + value, 0) / top.length);
+}
+
 export const sharpImageProcessor: ImageProcessor = {
   async clean(bytes): Promise<ImageProcessing> {
     try {
@@ -40,4 +82,5 @@ export const sharpImageProcessor: ImageProcessor = {
       return { ok: false, reason: "UNREADABLE" };
     }
   },
+  measureSharpness: (bytes) => sharpnessScore(bytes).catch(() => null),
 };

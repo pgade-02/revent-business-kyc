@@ -12,4 +12,7 @@ export type ImageProcessing = { ok: true; image: CleanImage } | { ok: false; rea
 
 export interface ImageProcessor {
   clean(bytes: Uint8Array): Promise<ImageProcessing>;
+  // How sharp the text in a photo is: 0 = completely blurred, higher = sharper.
+  // Compared with READ_MIN_SHARPNESS by DOC_UNREADABLE. Null if the image cannot be opened.
+  measureSharpness(bytes: Uint8Array): Promise<number | null>;
 }
