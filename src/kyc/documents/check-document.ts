@@ -1,3 +1,4 @@
+import { parseAmountFils } from "../../plan/money";
 import type { CheckResult } from "../checks/check-result";
 import { checkDocExpired } from "../checks/doc-expired";
 import { checkDocExpiresSoon } from "../checks/doc-expires-soon";
@@ -7,6 +8,7 @@ import { checkEidDates } from "../checks/eid-dates";
 import { checkIdFormat } from "../checks/id-format";
 import { checkMrzCheckDigits } from "../checks/mrz-check-digits";
 import { checkPassportMrz } from "../checks/passport-mrz";
+import { checkStmtBalance } from "../checks/stmt-balance";
 import { emiratesIdMrzValues, findEmiratesIdMrz } from "../extraction/emirates-id-mrz";
 import { extractFields, textField, type ExtractedFields } from "../extraction/extract-fields";
 import type { ExtractedField } from "../extraction/extracted-field";
@@ -16,6 +18,8 @@ import type { AcceptedFile } from "../intake/intake-file";
 import type { LlmProvider } from "../interfaces/llm-provider";
 import type { OcrProvider } from "../interfaces/ocr-provider";
 import type { PageText, PdfTextReader } from "../interfaces/pdf-text-reader";
+import { readTransactions } from "../statements/read-transactions";
+import type { Transaction } from "../statements/transaction";
 import { decideDocumentStatus, type DocumentStatus } from "./document-status";
 import type { DocumentSlot } from "./slots";
 
@@ -41,6 +45,7 @@ export type CheckDocumentOutcome = {
   status: DocumentStatus;
   results: CheckResult[];
   fields: ExtractedFields | null;
+  transactions: Transaction[]; // bank statements only
   ocrPages: number[];
   problem: "OCR_FAILED" | "LLM_UNAVAILABLE" | "INVALID_OUTPUT" | null; // why reading failed, for logs
 };
@@ -73,6 +78,14 @@ function readMrz({ documentId, slot, today }: CheckDocumentInput, pages: PageTex
     return mrzRead(checkPassportMrz(documentId, found), found?.page, found ? passportMrzValues(found.mrz, today) : undefined);
   }
   return null;
+}
+
+function statementBalance(documentId: string, fields: ExtractedFields, transactions: Transaction[]): CheckResult {
+  const fils = (name: string) => {
+    const field = textField(fields, name);
+    return field ? parseAmountFils(field.value) : null;
+  };
+  return checkStmtBalance({ documentId, openingFils: fils("openingBalance"), closingFils: fils("closingBalance"), transactions });
 }
 
 function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields): CheckResult[] {
@@ -110,15 +123,16 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
 
   // Too small or blurred: ask for a new photo before paying for OCR.
   const photo = unreadableWith(null);
-  if (photo.status === "fail") return { status: decideDocumentStatus([photo], true), results: [photo], fields: null, ocrPages: [], problem: null };
+  if (photo.status === "fail") return { status: decideDocumentStatus([photo], true), results: [photo], fields: null, transactions: [], ocrPages: [], problem: null };
 
   const read = await readPages({ file, ...readers, minPageTextChars: limits.minPageTextChars });
-  if (!read.ok) return { status: "needs_review", results: [], fields: null, ocrPages: [], problem: "OCR_FAILED" };
+  if (!read.ok) return { status: "needs_review", results: [], fields: null, transactions: [], ocrPages: [], problem: "OCR_FAILED" };
 
-  const outcome = (results: CheckResult[], fields: ExtractedFields | null, problem: CheckDocumentOutcome["problem"]) => ({
+  const outcome = (results: CheckResult[], fields: ExtractedFields | null, problem: CheckDocumentOutcome["problem"], transactions: Transaction[] = []) => ({
     status: decideDocumentStatus(results, problem === null),
     results,
     fields,
+    transactions,
     ocrPages: read.ocrPages,
     problem,
   });
@@ -129,11 +143,18 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
   const wrongType = checkDocWrongType({ documentId, slot, pages: read.pages });
   if (wrongType.status === "fail") return outcome([unreadable, wrongType], null, null);
 
-  const extraction = await extractFields({ slot, pages: read.pages, llm: readers.llm, timeoutMs: limits.llmTimeoutMs });
+  const reading = { pages: read.pages, llm: readers.llm, timeoutMs: limits.llmTimeoutMs };
+  const [extraction, rows] = await Promise.all([
+    extractFields({ slot, ...reading }),
+    slot === "bank_statement" ? readTransactions(reading) : Promise.resolve(null),
+  ]);
   if (!extraction.ok) return outcome([unreadable, wrongType], null, extraction.reason);
+  if (rows && !rows.ok) return outcome([unreadable, wrongType], extraction.fields, rows.reason);
 
   // The printed expiry wins; the back of a current Emirates ID prints none, so the lines fill it in.
   const mrz = readMrz(input, read.pages);
   const fields = { ...mrz?.fields, ...extraction.fields };
-  return outcome([unreadable, wrongType, ...(mrz ? [mrz.check] : []), ...fieldChecks(input, fields)], fields, null);
+  const transactions = rows?.data ?? [];
+  const balance = rows ? [statementBalance(documentId, fields, transactions)] : [];
+  return outcome([unreadable, wrongType, ...(mrz ? [mrz.check] : []), ...fieldChecks(input, fields), ...balance], fields, null, transactions);
 }

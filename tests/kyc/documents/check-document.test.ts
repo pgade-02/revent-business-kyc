@@ -44,6 +44,18 @@ describe("checkDocument", () => {
     expect(outcome.results.find((result) => result.code === "DOC_EXPIRED")?.status).toBe("fail");
   });
 
+  it("reads a bank statement's rows and checks that they add up", async () => {
+    const outcome = await run("bank_statement", syntheticTexts.bankStatement);
+    expect(outcome.status).toBe("ready");
+    expect(outcome.transactions.map((transaction) => transaction.amountFils)).toEqual([2_000_000, -124_925, -500_000]);
+    expect(outcome.results.find((result) => result.code === "STMT_BALANCE")?.status).toBe("pass");
+  });
+
+  it("sends a statement to Needs review when its rows cannot be read, never half-counted", async () => {
+    const outcome = await run("bank_statement", syntheticTexts.bankStatement.replace("| 20,000.00 |", "| twenty thousand |"));
+    expect(outcome).toMatchObject({ status: "needs_review", problem: "INVALID_OUTPUT", transactions: [] });
+  });
+
   it("saves the passport's birth date and nationality from its machine-readable lines", async () => {
     const outcome = await run("passport", syntheticTexts.passport("2031-08-14"));
     expect(outcome.fields?.dateOfBirth?.value).toBe("1980-01-01");

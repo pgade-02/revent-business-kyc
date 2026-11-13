@@ -57,6 +57,13 @@
       "when": 1794606739120,
       "tag": "0007_assessments",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794608552975,
+      "tag": "0008_transactions",
+      "breakpoints": true
     }
   ]
 }

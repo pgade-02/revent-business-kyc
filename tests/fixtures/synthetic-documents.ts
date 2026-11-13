@@ -34,6 +34,10 @@ export const syntheticTexts = {
     "Period To: 2026-05-31",
     "Opening Balance: 120500.00",
     "Closing Balance: 134250.75",
+    "Date | Description | Credit | Debit | Balance",
+    "2026-05-03 | INWARD TRANSFER EXAMPLE CLIENT LLC | 20,000.00 | | 140,500.00",
+    "2026-05-12 | DEWA UTILITIES BILL PAYMENT | | 1,249.25 | 139,250.75",
+    "2026-05-27 | WPS SALARY TRANSFER PAYROLL | | 5,000.00 | 134,250.75",
   ].join("\n"),
 
   invoice: ["TAX INVOICE", "Invoice No: INV-0042", "Company Name: Demo Trading LLC", "Total: AED 1,050.00"].join("\n"),

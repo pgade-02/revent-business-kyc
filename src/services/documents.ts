@@ -134,7 +134,7 @@ export async function processDocument(services: DocumentServices, document: Docu
 
     const results = [duplicate, reused, ...outcome.results];
     const status = decideDocumentStatus(results, outcome.problem === null);
-    await saveProcessingResult(db, document.id, { status, fields: outcome.fields, results });
+    await saveProcessingResult(db, document.id, { status, fields: outcome.fields, results, transactions: outcome.transactions });
     return { status, customerMessageKeys: results.flatMap((result) => (result.customerMessageKey ? [result.customerMessageKey] : [])) };
   } catch (error) {
     await markDocumentFailed(db, document.id);

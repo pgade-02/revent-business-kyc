@@ -36,6 +36,7 @@ const input: CrossCheckInput = {
   company: { companyName: "Example Harbour Trading LLC", licenceNumber: "1048372", trn: "100234567800003", emirate: "dubai" },
   signatoryName: "Lina Example Rahal",
   nameCutoffs: { matchBps: 9_500, possibleMatchBps: 8_500 },
+  coverage: { submitMonth: "2026-07", monthsRequired: 2 },
 };
 
 const statuses = (results: ReturnType<typeof runCrossChecks>) => Object.fromEntries(results.map((result) => [result.code, result.status]));
@@ -53,6 +54,7 @@ describe("runCrossChecks", () => {
       NATIONALITY_MATCH: "pass",
       EID_EMPLOYER: "pass",
       IBAN_CONSISTENT: "pass",
+      STMT_COVERAGE: "pass",
       STMT_CURRENCY: "pass",
       STMT_CONTINUITY: "pass",
     });

@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
 import { DOCUMENT_SLOTS } from "@/kyc/documents/slots";
 import {
+  bigint,
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -175,6 +177,25 @@ export const checkResults = pgTable("check_results", {
   customerMessageKey: text("customer_message_key"),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
 });
+
+// One row per bank statement transaction, read at upload (ARCHITECTURE §4, decision log #21).
+// bigint: business balances can pass the ~21.4 million AED a 32-bit fils column holds.
+// Labels and payers are added when Part 2 labels the rows.
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: serial("id").primaryKey(),
+    documentId: integer("document_id")
+      .notNull()
+      .references(() => documents.id),
+    date: date("date", { mode: "string" }).notNull(),
+    amountFils: bigint("amount_fils", { mode: "number" }).notNull(),
+    balanceFils: bigint("balance_fils", { mode: "number" }),
+    description: text("description").notNull(), // ≤ 80 characters, account and card numbers masked
+    page: integer("page").notNull(),
+  },
+  (table) => [index("transactions_document").on(table.documentId)],
+);
 
 // One row per Part 2 run (ARCHITECTURE §2). A resubmit adds a row; old ones are kept.
 // Score, money figures and insights are added by later steps.

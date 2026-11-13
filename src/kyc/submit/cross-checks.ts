@@ -10,6 +10,7 @@ import { checkNameSignatory } from "../checks/name-signatory";
 import { checkNationalityMatch } from "../checks/nationality-match";
 import type { ReadValue } from "../checks/read-value";
 import { checkStmtContinuity } from "../checks/stmt-continuity";
+import { checkStmtCoverage } from "../checks/stmt-coverage";
 import { checkStmtCurrency } from "../checks/stmt-currency";
 import { checkTrnNumber } from "../checks/trn-number";
 import { EMIRATES } from "../company/company-details";
@@ -24,6 +25,7 @@ export type CrossCheckInput = {
   company: { companyName: string | null; licenceNumber: string | null; trn: string | null; emirate: string | null };
   signatoryName: string | null;
   nameCutoffs: NameCutoffs;
+  coverage: { submitMonth: string; monthsRequired: number }; // submitMonth: YYYY-MM in Dubai
 };
 
 // Every value of one field read from the documents in the given slots.
@@ -36,7 +38,7 @@ function readsOf(documents: readonly SubmittedDocument[], slots: readonly Docume
 
 // Part 2, step 1 (ARCHITECTURE §2): every submit-stage cross-check, from the fields stored
 // at upload and the details the customer typed. Pure: same input, same results.
-export function runCrossChecks({ documents, company, signatoryName, nameCutoffs }: CrossCheckInput): CheckResult[] {
+export function runCrossChecks({ documents, company, signatoryName, nameCutoffs, coverage }: CrossCheckInput): CheckResult[] {
   const read = (slot: DocumentSlot, name: string) => readsOf(documents, [slot], name)[0] ?? null;
   const eidSide = (slot: DocumentSlot): EidSide => ({
     emiratesIdNumber: read(slot, "emiratesIdNumber"),
@@ -69,13 +71,21 @@ export function runCrossChecks({ documents, company, signatoryName, nameCutoffs 
     checkDobMatch({ passport: read("passport", "dateOfBirth"), emiratesIdBack: read("emirates_id_back", "dateOfBirth") }),
     checkNationalityMatch({ passport: read("passport", "nationality"), emiratesIdBack: read("emirates_id_back", "nationality") }),
     checkEidEmployer({ companyName: company.companyName, employer: read("emirates_id_back", "employer") }),
-    ...statementChecks(documents.filter((document) => document.slot === "bank_statement")),
+    ...statementChecks(documents.filter((document) => document.slot === "bank_statement"), coverage),
   ];
 }
 
-function statementChecks(statements: readonly SubmittedDocument[]): CheckResult[] {
+function statementChecks(statements: readonly SubmittedDocument[], coverage: CrossCheckInput["coverage"]): CheckResult[] {
   const value = (statement: SubmittedDocument, name: string) => textField(statement.fields, name) ?? null;
   return [
+    checkStmtCoverage({
+      ...coverage,
+      statements: statements.map((statement) => ({
+        documentId: statement.id,
+        periodStart: value(statement, "periodStart")?.value ?? null,
+        periodEnd: value(statement, "periodEnd")?.value ?? null,
+      })),
+    }),
     checkIbanConsistent({ onStatements: readsOf(statements, ["bank_statement"], "iban") }),
     checkStmtCurrency({
       currencies: statements.map((statement) => {

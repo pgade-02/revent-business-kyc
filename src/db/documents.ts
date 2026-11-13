@@ -3,9 +3,10 @@ import type { CheckResult } from "@/kyc/checks/check-result";
 import type { FileFingerprint } from "@/kyc/checks/file-duplicate";
 import type { DocumentStatus } from "@/kyc/documents/document-status";
 import { slotAllowsSeveralFiles, type DocumentSlot } from "@/kyc/documents/slots";
+import type { Transaction } from "@/kyc/statements/transaction";
 import { extractedFieldsSchema, type ExtractedFields } from "@/kyc/extraction/extract-fields";
 import type { Database } from "./client";
-import { applications, checkResults, documents } from "./schema";
+import { applications, checkResults, documents, transactions } from "./schema";
 
 export type DocumentRow = typeof documents.$inferSelect;
 type NewDocument = Omit<typeof documents.$inferInsert, "id" | "status" | "createdAt" | "replacedAt">;
@@ -51,13 +52,18 @@ export async function countOtherCustomersWithFile(db: Database, sha256: string, 
   return row?.count ?? 0;
 }
 
-// Records one processing run: every check result, plus the document's new status and fields.
+// Records one processing run: every check result, the document's new status and fields, and
+// its statement rows. Rows from an earlier run of the same file are replaced, never doubled.
 export async function saveProcessingResult(
   db: Database,
   documentId: number,
-  run: { status: DocumentStatus; fields: ExtractedFields | null; results: CheckResult[] },
+  run: { status: DocumentStatus; fields: ExtractedFields | null; results: CheckResult[]; transactions?: readonly Transaction[] },
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await tx.delete(transactions).where(eq(transactions.documentId, documentId));
+    if (run.transactions && run.transactions.length > 0) {
+      await tx.insert(transactions).values(run.transactions.map((row) => ({ documentId, ...row })));
+    }
     if (run.results.length > 0) {
       await tx.insert(checkResults).values(
         run.results.map((result) => ({

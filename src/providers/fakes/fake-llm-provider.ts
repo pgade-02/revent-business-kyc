@@ -46,9 +46,21 @@ function findField(input: string, label: RegExp | undefined) {
   return null;
 }
 
+// Statement rows are printed as "YYYY-MM-DD | description | in | out | balance".
+function findRows(input: string) {
+  return input.split("\n").flatMap((line) => {
+    const cells = line.split("|").map((cell) => cell.trim());
+    const [date = "", description = "", moneyIn = "", moneyOut = "", balance = ""] = cells;
+    if (cells.length !== 5 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+    const orNull = (text: string) => (text === "" ? null : text);
+    return [{ date, description, moneyIn: orNull(moneyIn), moneyOut: orNull(moneyOut), balance: orNull(balance) }];
+  });
+}
+
 export const labelledLinesLlm: LlmProvider = {
   async generateJson({ input, outputSchema }): Promise<LlmResult> {
     if (!(outputSchema instanceof z.ZodObject)) return { ok: false, reason: "ERROR" };
+    if ("rows" in outputSchema.shape) return { ok: true, json: { rows: findRows(input) } };
     const json = Object.fromEntries(
       Object.keys(outputSchema.shape).map((key) => {
         const found = findField(input, labels[key]);
