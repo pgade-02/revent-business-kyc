@@ -7,6 +7,7 @@ export default async function KycHubPage({ params }: PageProps<"/[locale]/kyc">)
   const { locale } = await params;
   const overview = await loadKycOverview();
   if (!overview) return null; // the layout already shows "Build your plan first"
+  if (overview.submitted) redirect({ href: "/kyc/review", locale });
 
   const openTasks = overview.tasks.filter(({ status }) => status !== "completed" && status !== "coming_soon");
   const first = openTasks[0]?.task ?? overview.tasks[0]?.task ?? "account";

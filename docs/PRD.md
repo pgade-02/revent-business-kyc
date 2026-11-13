@@ -95,7 +95,7 @@ Rules:
 - Each file is checked straight after upload, and its message appears under that upload box.
 - On **Continue**, the task shows a short list of anything still marked "Needs a fix" on that task. It never blocks moving on.
 - A failed check never blocks Submit. The customer can still submit, and the reviewer sees the warning.
-- A **missing file** does block Submit. Submit stays disabled until every required slot has a file, and the server also rejects the request with the list of missing slots. No score is computed for an incomplete application.
+- A **missing file** or an **unsaved details form** (Company details, Authorised signatory) does block Submit. Submit stays disabled until every required slot has a file and both forms are saved, and the server also rejects the request with the list of what is missing. No score is computed for an incomplete application.
 
 ## 6. Team experience (review page)
 

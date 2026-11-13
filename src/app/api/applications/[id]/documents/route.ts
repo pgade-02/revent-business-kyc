@@ -14,6 +14,7 @@ export async function POST(request: Request, context: RouteContext<"/api/applica
   const services = await getDocumentServices();
   const access = await findCustomerApplication(services.db, applicationId);
   if (!access.ok) return accessDeniedResponse(access.reason);
+  if (access.value.status !== "draft") return Response.json({ error: "Already submitted" }, { status: 409 });
 
   const form = await request.formData().catch(() => null);
   const slot = slotField.safeParse(form?.get("slot"));

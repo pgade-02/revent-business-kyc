@@ -230,6 +230,22 @@
       },
       "fullNameHint": "As shown on the passport.",
       "signingEmailHint": "We send the lease to this address for electronic signing."
+    },
+    "review": {
+      "intro": "Check that everything is in. After you submit, you can’t change your details or documents.",
+      "stillNeeded": "{count, plural, one {# thing still needed} other {# things still needed}}",
+      "missing": {
+        "company_details": "Save your company details",
+        "signatory_details": "Save the authorised signatory’s details",
+        "file": "Upload: {name}"
+      },
+      "allIn": "Everything is in. You can submit.",
+      "fixesDoNotBlock": "{count, plural, one {# file needs a fix. You can still submit; our team will see it.} other {# files need a fix. You can still submit; our team will see them.}}",
+      "submit": "Submit",
+      "submitting": "Submitting…",
+      "submitFailed": "We couldn’t submit your application. Please try again.",
+      "inProgressTitle": "Verification in progress",
+      "inProgressBody": "Thank you. We’ve received your application and our team is checking it. We’ll send your quote within 1 working day."
     }
   }
 }
