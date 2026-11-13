@@ -1,6 +1,6 @@
 # Architecture
 
-Principle: **AI reads, code decides, people approve.** AI is used only where rules cannot work: turning images into text, filling a fixed form from messy text, labelling bank transactions, and writing the summary. Every check, number, score and band is plain TypeScript.
+Principle: **AI reads, code decides, people approve.** AI is used only where rules cannot work: turning images into text, filling a fixed form from messy text, labelling bank transactions, and writing the reviewer insights. Every check, number, score and band is plain TypeScript.
 
 ## 1. Stack
 
@@ -63,7 +63,7 @@ flowchart TD
     RQ -. re-upload .-> U
 ```
 
-AI steps: OCR, Extract fields, Label transactions, Summary. Everything else is code or people.
+AI steps: OCR, Extract fields, Label transactions, Insights. Everything else is code or people.
 
 ### Before KYC: plan and pricing
 
@@ -94,7 +94,7 @@ upload → store file (hash, size, type) → router → extract fields → quick
 ### Part 2: per application, after Submit
 
 ```
-cross-document checks → statement transactions → money figures → score + band → summary → review page
+cross-document checks → statement transactions → money figures → score + band → insights → review page
 ```
 
 0. **Completeness gate.** Submit is refused (UI disabled, and the server returns the list of what is missing) until every required slot has a file and the Company details and Authorised signatory forms are saved. Required slots: trade licence, tax certificate, bank statements, passport, Emirates ID front, Emirates ID back, and the self-disclosure form when the route is self-disclosure. A file waiting for a fix counts as a file. No score is computed for an incomplete application. Submit sets `status = submitted` and `submitted_at`; after that, uploads and form saves are refused.
@@ -102,7 +102,7 @@ cross-document checks → statement transactions → money figures → score + b
 2. Bank statements: label the stored transactions (section 4), reconcile balances in code.
 3. Compute money figures (section 4).
 4. Score and band (section 5).
-5. Summary: the LLM receives **only computed findings** (never raw documents) and fills a fixed schema. If it fails, a code template produces the summary instead.
+5. Insights: the LLM receives **only computed findings** (score, band, check results, money figures, licence activities; never raw documents or page text) and fills a fixed schema: `profile` (2–3 sentences), `patterns` (≤ 4, each with the finding it rests on and its evidence), `thingsToCheck` (≤ 3). Code rejects the output if it has a number not in the findings or evidence that does not exist; then a code template writes a plain profile and lists the failed checks instead (PRD §6, decision log 50).
 6. Save the assessment. The team acts on the review page.
 
 **Request document** → the customer gets a message → re-uploads → Part 1 runs → resubmits → Part 2 runs again. Old assessments are kept.
@@ -163,9 +163,9 @@ Name matching: lower-case, standard spellings (Mohammed / Muhammad / Mohd), drop
 | `returned_item` | Bounced cheques, returned direct debits |
 | `other` | Ignored in v1 |
 
-The LLM proposes a label per row. Code does all arithmetic.
+The LLM proposes a label per row, and for `customer_income` rows the payer's name as written. Code does all arithmetic, including grouping income by payer.
 
-**Stored per transaction:** date (Dubai, date-only), amount (signed integer fils: + in, − out), balance (fils), label, page number, and a description cut to 80 characters with account and card numbers masked. Full page text is never stored.
+**Stored per transaction:** date (Dubai, date-only), amount (signed integer fils: + in, − out), balance (fils), label, payer (income rows only), page number, and a description cut to 80 characters with account and card numbers masked. Full page text is never stored.
 
 **Money figures** (money in integer fils, ratios in integer basis points, per calendar month):
 
@@ -179,6 +179,8 @@ The LLM proposes a label per row. Code does all arithmetic.
 | `returnedItems` | Count of `returned_item` |
 | `existingDebtMonthly` | Mean monthly `debt_repayment`, rounded half-up at the end |
 | `debtToIncomeBps` | `existingDebtMonthly` ÷ `avgMonthlyIncome`, in bps. `null` if income is 0 |
+| `topPayerShareBps` | Income from the largest payer ÷ all `customer_income`, in bps. `null` if income is 0. Shown and used by the insights; **not scored** |
+| `largestBalanceDropBps` | Largest fall from one month's closing balance to the next, as bps of the earlier balance (only when that balance is above 0). Shown and used by the insights; **not scored** |
 
 If `avgMonthlyIncome` is 0, both ratios are `null`, their sub-scores are 0, and the reason "No customer income found" (`NO_CUSTOMER_INCOME`) is added. Ratios are never compared as floats. Rounding helpers live in `src/plan/money.ts`.
 
@@ -236,7 +238,7 @@ The 0.9 field-confidence target in §8 is an evaluation target only, not runtime
     "existingDebtMonthly": 1125000,
     "debtToIncomeBps": 2500
   },
-  "summary": "...",
+  "insights": { "profile": "...", "patterns": [{ "text": "...", "evidence": { "documentId": "doc_4", "page": 2 } }], "thingsToCheck": ["..."], "source": "llm" },
   "createdAt": "2026-11-10T10:15:00Z"
 }
 ```
@@ -290,7 +292,7 @@ src/
     checks/               one file per check
     statements/           transactions, labels, figures
     scoring/              score, band, hard stops
-    summary/              LLM summary + template fallback
+    insights/             LLM insights + template fallback
   providers/              Real implementations of the src/kyc interfaces; the only place sharp, pdf-lib, pdfjs-dist and AI SDKs are imported
   services/               Glue for one use case: calls src/kyc and src/plan, reads and writes src/db, gets parts from src/providers (app-services.ts chooses them)
   auth/                   Session cookie, and access checks that limit every lookup to the signed-in customer's own rows
@@ -321,7 +323,7 @@ Run on the labelled test set (30–50 synthetic or anonymised documents, plus de
 | Transactions | Label accuracy | Correct label per row | ≥ 90% |
 | Integrity | Tamper catch rate | Edited statements flagged | ≥ 90% |
 | Integrity | False alarm rate | Clean documents wrongly flagged | < 10% |
-| Summary | Faithfulness | Every number in the summary exists in the findings | 100% |
+| Insights | Faithfulness | Every number and evidence link in the insights exists in the findings | 100% |
 | Decision | Band agreement | Band matches the reviewer's judgement (shadow test) | ≥ 90% |
 | Speed | Latency p50 / p95 per document | Time from upload to status | p95 ≤ 15 s |
 | Speed | Latency per assessment | Submit to review page ready | ≤ 3 min |
@@ -384,6 +386,7 @@ How to use: when an approach is tried, add a row. Status moves `trying` → `ado
 | 47 | 2026-11-13 | DOC_UNREADABLE also measures photo sharpness (variance of the Laplacian on the sharpest 10% of 50 px tiles, at 1200 px width) and refuses photos below READ_MIN_SHARPNESS (default 250) before OCR. Photos only; scanned PDF pages are next | A real blurred Emirates ID photo was marked Ready with a misread name and dates: the OCR returns no quality score and guesses at blurred text | Real photos: blurred card 160 (misread) vs softest correctly read scan 371. Specimen blurred card 10. Refused with no OCR cost; sharp files unchanged. Calibrated on one real blurred photo: re-tune as more are collected | adopted |
 | 48 | 2026-11-13 | Refines row 37: Company details and Authorised signatory have forms, validated by Zod in `src/kyc/company` and `src/kyc/signatory` and saved on `applications` (migrations 0004, 0005). Company details is complete once saved. Authorised signatory is complete only when its details are saved and all three identity documents are uploaded; "Needs a fix" still wins. Mobiles are stored as +9715XXXXXXXX | Typed values are what NAME_SIGNATORY, EMAIL_DOMAIN, LICENCE_NUMBER and TRN_NUMBER compare against | `tests/kyc/company-details.test.ts`, `tests/kyc/signatory-details.test.ts`, `tests/kyc/documents/kyc-tasks.test.ts`, `tests/e2e/company.spec.ts`, `tests/e2e/signatory.spec.ts` | adopted |
 | 49 | 2026-11-13 | Refines rows 12 and 48: Submit also waits for the Company details and Authorised signatory forms to be saved, not only for files. Rule in `src/kyc/submit/submit-blockers.ts`, checked again on the server by `POST /api/applications/:id/submit`. Once submitted, uploads and form saves return 409 | The submit-stage cross-checks (`NAME_COMPANY`, `LICENCE_NUMBER`, `NAME_SIGNATORY`, `EMAIL_DOMAIN`) compare documents with the typed values, so they need them | `tests/kyc/submit-blockers.test.ts`, `tests/services/submit-application.test.ts`, `tests/e2e/submit.spec.ts` | adopted |
+| 50 | 2026-11-13 | Refines row 3: the reviewer summary becomes Insights (profile, patterns with evidence, things to check), still written only from computed findings with a template fallback. Adds two shown-not-scored figures (`topPayerShareBps`, `largestBalanceDropBps`), the payer name on income rows, and licence activities in the header. No questions are sent to the customer | A plain summary repeated the card; patterns and pointers give the reviewer something new without letting the AI decide | Owner decision; faithfulness target in §8 | adopted |
 
 ## 10. Later (not v1)
 
