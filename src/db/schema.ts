@@ -104,6 +104,11 @@ export const applications = pgTable(
     trn: text("trn"),
     registeredAddress: text("registered_address"),
     deliverToRegisteredAddress: boolean("deliver_to_registered_address"),
+    // Authorised signatory as typed (PRD §4, screen 6). Empty until saved.
+    signatoryIsApplicant: boolean("signatory_is_applicant"),
+    signatoryName: text("signatory_name"),
+    signatoryEmail: text("signatory_email"),
+    signatoryMobile: text("signatory_mobile"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
     submittedAt: timestamp("submitted_at", { withTimezone: true, mode: "string" }),
   },

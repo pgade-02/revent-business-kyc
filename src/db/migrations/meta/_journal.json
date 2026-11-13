@@ -36,6 +36,13 @@
       "when": 1794574619549,
       "tag": "0004_company_details",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794575535896,
+      "tag": "0005_signatory_details",
+      "breakpoints": true
     }
   ]
 }

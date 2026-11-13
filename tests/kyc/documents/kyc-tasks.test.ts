@@ -30,7 +30,7 @@ describe("uploadTaskStatus", () => {
 });
 
 describe("taskStatus", () => {
-  const nothing = { files: [], companyDetailsSaved: false };
+  const nothing = { files: [], companyDetailsSaved: false, signatoryDetailsSaved: false };
 
   it("marks the pre-filled account as completed", () => {
     expect(taskStatus("account", nothing)).toBe("completed");
@@ -39,5 +39,17 @@ describe("taskStatus", () => {
   it("marks Company details completed only once they are saved", () => {
     expect(taskStatus("company", nothing)).toBe("not_started");
     expect(taskStatus("company", { ...nothing, companyDetailsSaved: true })).toBe("completed");
+  });
+
+  it("completes Authorised signatory only with both the details and all three identity documents", () => {
+    const allIds = (["passport", "emirates_id_front", "emirates_id_back"] as const).map((slot) => ({ slot, status: "ready" }));
+    expect(taskStatus("signatory", nothing)).toBe("not_started");
+    expect(taskStatus("signatory", { ...nothing, signatoryDetailsSaved: true })).toBe("in_progress");
+    expect(taskStatus("signatory", { ...nothing, files: allIds })).toBe("in_progress");
+    expect(taskStatus("signatory", { ...nothing, files: allIds, signatoryDetailsSaved: true })).toBe("completed");
+  });
+
+  it("shows a needed fix on Authorised signatory even before the details are saved", () => {
+    expect(taskStatus("signatory", { ...nothing, files: [{ slot: "passport", status: "needs_fix" }] })).toBe("needs_fix");
   });
 });

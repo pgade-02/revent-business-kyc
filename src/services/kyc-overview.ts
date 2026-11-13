@@ -4,6 +4,7 @@ import type { SessionUser } from "@/auth/session";
 import { getAppDatabase } from "@/db/app-db";
 import { loadCompanyDetails, type SavedCompanyDetails } from "@/db/company-details";
 import { listCurrentDocuments, type CurrentDocument } from "@/db/documents";
+import { loadSignatoryDetails, type SavedSignatoryDetails } from "@/db/signatory-details";
 import { loadLatestScoringSettings } from "@/db/scoring-settings";
 import { TASK_SLOTS, taskStatus, tasksForRoute, type KycTask, type TaskStatus } from "@/kyc/documents/kyc-tasks";
 
@@ -14,6 +15,7 @@ export type KycOverview = {
   applicationId: number;
   documents: CurrentDocument[];
   companyDetails: SavedCompanyDetails | null;
+  signatoryDetails: SavedSignatoryDetails | null;
   tasks: TaskSummary[];
   completedCount: number;
   routeThresholdFils: number;
@@ -28,7 +30,12 @@ export const loadKycOverview = cache(async (): Promise<KycOverview | null> => {
 
   const documents = await listCurrentDocuments(db, access.value.id);
   const companyDetails = await loadCompanyDetails(db, access.value.id);
-  const inputs = { files: documents, companyDetailsSaved: companyDetails?.companyName != null };
+  const signatoryDetails = await loadSignatoryDetails(db, access.value.id);
+  const inputs = {
+    files: documents,
+    companyDetailsSaved: companyDetails?.companyName != null,
+    signatoryDetailsSaved: signatoryDetails?.fullName != null,
+  };
   const tasks = tasksForRoute(access.value.route).map((task) => ({ task, status: taskStatus(task, inputs) }));
   const { settings } = await loadLatestScoringSettings(db);
   return {
@@ -36,6 +43,7 @@ export const loadKycOverview = cache(async (): Promise<KycOverview | null> => {
     applicationId: access.value.id,
     documents,
     companyDetails,
+    signatoryDetails,
     tasks,
     completedCount: tasks.filter((summary) => summary.status === "completed").length,
     routeThresholdFils: settings.routeThresholdFils,

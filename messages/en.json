@@ -207,12 +207,29 @@
       },
       "choose": "Choose…",
       "trnHint": "VAT or Corporate Tax, as shown on your tax certificate.",
-      "deliverToRegisteredAddress": "Deliver to the registered address",
+      "deliverToRegisteredAddress": "Deliver to the registered address"
+    },
+    "detailsForm": {
       "save": "Save details",
       "saving": "Saving…",
       "saved": "Details saved",
       "fixFields": "Please check the highlighted fields.",
       "saveFailed": "We couldn’t save your details. Please try again."
+    },
+    "signatoryForm": {
+      "isApplicant": "I’m the authorised signatory",
+      "fields": {
+        "fullName": "Full name",
+        "signingEmail": "Email for signing",
+        "mobile": "Mobile (optional)"
+      },
+      "errors": {
+        "fullName": "Enter the signatory’s full name.",
+        "signingEmail": "Enter a valid email address.",
+        "mobile": "Enter a UAE mobile number, for example 050 123 4567."
+      },
+      "fullNameHint": "As shown on the passport.",
+      "signingEmailHint": "We send the lease to this address for electronic signing."
     }
   }
 }
