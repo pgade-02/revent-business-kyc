@@ -1,4 +1,4 @@
-// Calendar dates are plain "YYYY-MM-DD" strings in Asia/Dubai time 
+// Calendar dates are plain "YYYY-MM-DD" strings in Asia/Dubai time.
 // Working on date-only strings means no hour or time-zone can shift a day.
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -27,8 +27,20 @@ export function daysBetween(from: string, to: string): number | null {
   return start === null || end === null ? null : end - start;
 }
 
-
 export function todayInDubai(now: Date): string {
   // en-CA formats dates as YYYY-MM-DD.
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(now);
+}
+
+// The calendar date `days` after `isoDate` (before, if negative).
+export function addDays(isoDate: string, days: number): string {
+  const start = dayNumber(isoDate);
+  if (start === null) throw new Error("addDays needs a real YYYY-MM-DD date");
+  return new Date((start + days) * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
+// The last calendar day of a YYYY-MM month.
+export function monthEnd(month: string): string {
+  const last = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate();
+  return `${month}-${String(last).padStart(2, "0")}`;
 }

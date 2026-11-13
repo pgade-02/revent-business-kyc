@@ -1,15 +1,10 @@
-import { daysBetween } from "../dates";
+import { daysBetween, monthEnd } from "../dates";
 import type { CheckResult } from "./check-result";
 
 const CODE = "STMT_COVERAGE";
 
 export type StatementPeriod = { documentId: string; periodStart: string | null; periodEnd: string | null };
 type Period = { start: string; end: string };
-
-const monthEnd = (month: string) => {
-  const last = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate();
-  return `${month}-${String(last).padStart(2, "0")}`;
-};
 
 // The `count` full calendar months before `month` (YYYY-MM), oldest first.
 export function monthsBefore(month: string, count: number): string[] {
@@ -34,12 +29,22 @@ function joined(periods: Period[]): Period[] {
   return result;
 }
 
-export function checkStmtCoverage(input: { statements: readonly StatementPeriod[]; submitMonth: string; monthsRequired: number }): CheckResult {
-  const periods = input.statements.flatMap(({ periodStart: start, periodEnd: end }) => (start && end ? [{ start, end }] : []));
-  if (periods.length === 0) return { code: CODE, status: "skipped", detail: "Could not check: no statement period was read." };
-  const covered = joined(periods);
+type CoverageInput = { statements: readonly StatementPeriod[]; submitMonth: string; monthsRequired: number };
+
+const periodsOf = (statements: readonly StatementPeriod[]) =>
+  statements.flatMap(({ periodStart: start, periodEnd: end }) => (start && end ? [{ start, end }] : []));
+
+// The required months that statements cover in full. The money figures use exactly these.
+export function coveredMonths({ statements, submitMonth, monthsRequired }: CoverageInput): string[] {
+  const covered = joined(periodsOf(statements));
+  return monthsBefore(submitMonth, monthsRequired).filter((month) => covered.some((period) => period.start <= `${month}-01` && period.end >= monthEnd(month)));
+}
+
+export function checkStmtCoverage(input: CoverageInput): CheckResult {
+  if (periodsOf(input.statements).length === 0) return { code: CODE, status: "skipped", detail: "Could not check: no statement period was read." };
   const required = monthsBefore(input.submitMonth, input.monthsRequired);
-  const missing = required.filter((month) => !covered.some((period) => period.start <= `${month}-01` && period.end >= monthEnd(month)));
+  const covered = coveredMonths(input);
+  const missing = required.filter((month) => !covered.includes(month));
 
   const first = input.statements[0];
   const evidence = first ? { documentId: first.documentId, page: 1 } : undefined;

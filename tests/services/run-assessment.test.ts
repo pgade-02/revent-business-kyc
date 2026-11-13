@@ -9,10 +9,16 @@ import { seedDatabase } from "@/db/seed/seed";
 import { saveSignatoryDetails } from "@/db/signatory-details";
 import type { DocumentSlot } from "@/kyc/documents/slots";
 import { createApplication } from "@/services/applications";
+import { monthEnd } from "@/kyc/dates";
+import type { Transaction } from "@/kyc/statements/transaction";
+import { createBrokenLlm, labelledLinesLlm } from "@/providers/fakes/fake-llm-provider";
+import { companyA } from "../fixtures/realistic/companies";
+import { generateStatements } from "../fixtures/realistic/statements";
 import { runAssessment } from "@/services/run-assessment";
 
 // Invented company and person.
 let db: Database;
+const ai = { llm: labelledLinesLlm, timeoutMs: 1_000 };
 const plan = { term: 36 as const, lines: [{ productId: "wireless-business-headset", quantity: 1, serviceIds: [] }] };
 const read = (value: string) => ({ value, page: 1, confidenceBps: 9_500 });
 
@@ -29,10 +35,35 @@ afterAll(async () => {
 const markSubmitted = (applicationId: number) =>
   db.update(applications).set({ status: "submitted", submittedAt: "2026-11-13T08:00:00.000Z" }).where(eq(applications.id, applicationId));
 
-async function uploadWithFields(applicationId: number, slot: DocumentSlot, fields: Record<string, string>) {
-  const id = await insertDocument(db, { applicationId, slot, fileKey: `test/${slot}`, fileKind: "pdf", sizeBytes: 1, pageCount: 1, sha256: `${applicationId}-${slot}` });
-  await saveProcessingResult(db, id, { status: "ready", results: [], fields: Object.fromEntries(Object.entries(fields).map(([name, value]) => [name, read(value)])) });
+async function uploadWithFields(applicationId: number, slot: DocumentSlot, fields: Record<string, string>, transactions: Transaction[] = []) {
+  const sha256 = `${applicationId}-${slot}-${fields.periodStart ?? ""}`;
+  const id = await insertDocument(db, { applicationId, slot, fileKey: `test/${sha256}`, fileKind: "pdf", sizeBytes: 1, pageCount: 1, sha256 });
+  const stored = Object.fromEntries(Object.entries(fields).map(([name, value]) => [name, read(value)]));
+  await saveProcessingResult(db, id, { status: "ready", results: [], fields: stored, transactions });
   return id;
+}
+
+const amount = (fils: number) => (fils / 100).toFixed(2);
+
+// The fictional company's six statements, stored as upload would have stored them.
+async function uploadStatements(applicationId: number) {
+  for (const statement of generateStatements(companyA, ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"])) {
+    const periodEnd = monthEnd(statement.month);
+    const rows = statement.rows.map((row) => ({ date: row.date, amountFils: row.creditFils - row.debitFils, balanceFils: row.balanceFils, description: row.description, page: 1 }));
+    await uploadWithFields(
+      applicationId,
+      "bank_statement",
+      { periodStart: `${statement.month}-01`, periodEnd, currency: "AED", openingBalance: amount(statement.openingFils), closingBalance: amount(statement.closingFils) },
+      rows,
+    );
+  }
+}
+
+async function submittedApplication() {
+  const created = await createApplication(db, "seed-customer", plan);
+  if (!created.ok) throw new Error(created.reason);
+  await markSubmitted(created.applicationId);
+  return created.applicationId;
 }
 
 describe("runAssessment", () => {
@@ -55,7 +86,7 @@ describe("runAssessment", () => {
     await saveSignatoryDetails(db, applicationId, { isApplicant: true, fullName: "Example Person", signingEmail: "person@example.com", mobile: null });
 
     await markSubmitted(applicationId);
-    await runAssessment(db, applicationId);
+    await runAssessment(db, applicationId, ai);
     const assessment = await loadLatestAssessment(db, applicationId);
     const byCode = Object.fromEntries((assessment?.checks ?? []).map((check) => [check.code, check]));
     expect(assessment?.checks).toHaveLength(13);
@@ -66,12 +97,30 @@ describe("runAssessment", () => {
     expect(byCode.STMT_COVERAGE?.status).toBe("skipped"); // no statements uploaded in this test
   });
 
+  it("labels the stored rows and saves money figures built from them", async () => {
+    const applicationId = await submittedApplication();
+    await uploadStatements(applicationId);
+    await runAssessment(db, applicationId, ai);
+    const assessment = await loadLatestAssessment(db, applicationId);
+    expect(assessment?.figuresProblem).toBeNull();
+    expect(assessment?.figures).toMatchObject({ monthsCovered: 6, avgMonthlyIncome: companyA.monthlyIncomeFils, existingDebtMonthly: companyA.monthlyLoanRepaymentFils });
+    expect(assessment?.checks.find((check) => check.code === "STMT_COVERAGE")?.status).toBe("pass");
+  });
+
+  it("leaves the figures empty, with the reason, when the AI cannot label the rows", async () => {
+    const applicationId = await submittedApplication();
+    await uploadStatements(applicationId);
+    await runAssessment(db, applicationId, { llm: createBrokenLlm("unavailable"), timeoutMs: 1_000 });
+    const assessment = await loadLatestAssessment(db, applicationId);
+    expect(assessment).toMatchObject({ figures: null, figuresProblem: "Transactions could not be labelled (AI unavailable or answer off-form)." });
+  });
+
   it("keeps earlier assessments when it runs again", async () => {
     const created = await createApplication(db, "seed-customer", plan);
     if (!created.ok) throw new Error(created.reason);
     await markSubmitted(created.applicationId);
-    const first = await runAssessment(db, created.applicationId);
-    const second = await runAssessment(db, created.applicationId);
+    const first = await runAssessment(db, created.applicationId, ai);
+    const second = await runAssessment(db, created.applicationId, ai);
     expect(second).toBeGreaterThan(first);
     expect((await loadLatestAssessment(db, created.applicationId))?.id).toBe(second);
   });

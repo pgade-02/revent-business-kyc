@@ -1,6 +1,8 @@
 import { accessDeniedResponse, findCustomerApplication, parseId } from "@/auth/access";
 import { getAppDatabase } from "@/db/app-db";
 import type { Database } from "@/db/client";
+import { readUploadLimits } from "@/config/limits";
+import { getDocumentReaders } from "@/services/app-services";
 import { runAssessment } from "@/services/run-assessment";
 import { submitApplication } from "@/services/submit-application";
 
@@ -8,7 +10,8 @@ import { submitApplication } from "@/services/submit-application";
 // Only the id and error type are logged: the message could hold document values.
 async function runAssessmentSafely(db: Database, applicationId: number) {
   try {
-    await runAssessment(db, applicationId);
+    const ai = { llm: getDocumentReaders(process.env).llm, timeoutMs: readUploadLimits(process.env).llmTimeoutMs };
+    await runAssessment(db, applicationId, ai);
   } catch (error) {
     console.error(`Assessment failed for application ${applicationId}: ${error instanceof Error ? error.name : "unknown error"}`);
   }

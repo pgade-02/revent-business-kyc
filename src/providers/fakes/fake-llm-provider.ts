@@ -57,10 +57,31 @@ function findRows(input: string) {
   });
 }
 
+// Labels by keywords in the synthetic descriptions. Rows arrive as "id | date | description | amount".
+function labelRows(input: string) {
+  return input.split("\n").flatMap((line) => {
+    const [id = "", , description = "", amount = ""] = line.split("|").map((cell) => cell.trim());
+    if (!/^\d+$/.test(id)) return [];
+    const incoming = !amount.startsWith("-");
+    const payer = /^INWARD TRANSFER (.+?)(?: INV-\S+)?$/.exec(description)?.[1] ?? null;
+    const label = /RETURNED|BOUNCED|REVERSAL/.test(description)
+      ? "returned_item"
+      : /LOAN REPAYMENT|FINANCE INSTALMENT/.test(description)
+        ? "debt_repayment"
+        : /OWN ACCOUNT|LOAN DISBURSEMENT|CAPITAL INJECTION/.test(description)
+          ? "own_transfer_or_loan_in"
+          : incoming && payer
+            ? "customer_income"
+            : "other";
+    return [{ id: Number(id), label, payer: label === "customer_income" ? payer : null }];
+  });
+}
+
 export const labelledLinesLlm: LlmProvider = {
   async generateJson({ input, outputSchema }): Promise<LlmResult> {
     if (!(outputSchema instanceof z.ZodObject)) return { ok: false, reason: "ERROR" };
     if ("rows" in outputSchema.shape) return { ok: true, json: { rows: findRows(input) } };
+    if ("labels" in outputSchema.shape) return { ok: true, json: { labels: labelRows(input) } };
     const json = Object.fromEntries(
       Object.keys(outputSchema.shape).map((key) => {
         const found = findField(input, labels[key]);

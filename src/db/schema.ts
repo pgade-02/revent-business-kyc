@@ -180,7 +180,6 @@ export const checkResults = pgTable("check_results", {
 
 // One row per bank statement transaction, read at upload (ARCHITECTURE §4, decision log #21).
 // bigint: business balances can pass the ~21.4 million AED a 32-bit fils column holds.
-// Labels and payers are added when Part 2 labels the rows.
 export const transactions = pgTable(
   "transactions",
   {
@@ -193,6 +192,8 @@ export const transactions = pgTable(
     balanceFils: bigint("balance_fils", { mode: "number" }),
     description: text("description").notNull(), // ≤ 80 characters, account and card numbers masked
     page: integer("page").notNull(),
+    label: text("label"), // set by Part 2; null until labelled
+    payer: text("payer"), // customer_income rows only
   },
   (table) => [index("transactions_document").on(table.documentId)],
 );
@@ -210,6 +211,8 @@ export const assessments = pgTable(
       .notNull()
       .references(() => scoringSettings.version),
     checks: jsonb("checks").notNull(), // CheckResult[] from the cross-checks, validated by Zod on the way out
+    figures: jsonb("figures"), // MoneyFigures, or null when they could not be computed (figuresProblem says why)
+    figuresProblem: text("figures_problem"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
   },
   (table) => [index("assessments_application").on(table.applicationId)],

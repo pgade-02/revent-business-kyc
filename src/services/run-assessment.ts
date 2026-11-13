@@ -7,25 +7,31 @@ import { loadLatestScoringSettings } from "@/db/scoring-settings";
 import { applications } from "@/db/schema";
 import { loadSignatoryDetails } from "@/db/signatory-details";
 import { todayInDubai } from "@/kyc/dates";
+import type { LlmProvider } from "@/kyc/interfaces/llm-provider";
 import { runCrossChecks } from "@/kyc/submit/cross-checks";
+import { statementFigures } from "./statement-figures";
 
 // The application date is the Submit date in Dubai (ARCHITECTURE §3).
-async function loadSubmittedAt(db: Database, applicationId: number): Promise<string> {
-  const [row] = await db.select({ submittedAt: applications.submittedAt }).from(applications).where(eq(applications.id, applicationId));
+async function loadSubmitted(db: Database, applicationId: number) {
+  const [row] = await db
+    .select({ submittedAt: applications.submittedAt, planMonthlyFils: applications.planMonthlyFils })
+    .from(applications)
+    .where(eq(applications.id, applicationId));
   if (!row?.submittedAt) throw new Error("Part 2 runs only after Submit");
-  return row.submittedAt;
+  return { submitMonth: todayInDubai(new Date(row.submittedAt)).slice(0, 7), planMonthlyFils: row.planMonthlyFils };
 }
 
-// Part 2 after Submit (ARCHITECTURE §2). For now: the cross-checks, saved as a new
-// assessment. Money figures, score and insights are added by later steps.
-export async function runAssessment(db: Database, applicationId: number): Promise<number> {
-  const [documents, company, signatory, { version, settings }, submittedAt] = await Promise.all([
+// Part 2 after Submit (ARCHITECTURE §2), saved as a new assessment. Score and insights
+// are added by later steps.
+export async function runAssessment(db: Database, applicationId: number, ai: { llm: LlmProvider; timeoutMs: number }): Promise<number> {
+  const [documents, company, signatory, { version, settings }, submitted] = await Promise.all([
     listCurrentDocumentFields(db, applicationId),
     loadCompanyDetails(db, applicationId),
     loadSignatoryDetails(db, applicationId),
     loadLatestScoringSettings(db),
-    loadSubmittedAt(db, applicationId),
+    loadSubmitted(db, applicationId),
   ]);
+  const coverage = { submitMonth: submitted.submitMonth, monthsRequired: settings.statementMonthsRequired };
   const checks = runCrossChecks({
     documents,
     company: {
@@ -36,7 +42,8 @@ export async function runAssessment(db: Database, applicationId: number): Promis
     },
     signatoryName: signatory?.fullName ?? null,
     nameCutoffs: settings.nameMatch,
-    coverage: { submitMonth: todayInDubai(new Date(submittedAt)).slice(0, 7), monthsRequired: settings.statementMonthsRequired },
+    coverage,
   });
-  return insertAssessment(db, { applicationId, scoringSettingsVersion: version, checks });
+  const { figures, problem } = await statementFigures(db, { documents, coverage, planMonthlyFils: submitted.planMonthlyFils, ai });
+  return insertAssessment(db, { applicationId, scoringSettingsVersion: version, checks, figures, figuresProblem: problem });
 }
