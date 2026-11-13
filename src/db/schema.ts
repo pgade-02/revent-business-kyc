@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { DOCUMENT_SLOTS } from "@/kyc/documents/slots";
+import { REVIEW_ACTIONS } from "@/kyc/review/review-action";
 import {
   bigint,
   boolean,
@@ -219,4 +220,27 @@ export const assessments = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
   },
   (table) => [index("assessments_application").on(table.applicationId)],
+);
+
+export const reviewAction = pgEnum("review_action", REVIEW_ACTIONS);
+
+// One row per decision a reviewer records (PRD §6, item 7). Nothing here is ever written
+// by the system itself: every row has a person behind it.
+export const reviewActions = pgTable(
+  "review_actions",
+  {
+    id: serial("id").primaryKey(),
+    applicationId: integer("application_id")
+      .notNull()
+      .references(() => applications.id),
+    assessmentId: integer("assessment_id").references(() => assessments.id), // the score card the reviewer saw
+    reviewerId: text("reviewer_id")
+      .notNull()
+      .references(() => users.id),
+    action: reviewAction("action").notNull(),
+    slot: documentSlot("slot"), // request_document only
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [index("review_actions_application").on(table.applicationId)],
 );
