@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageRoundHalfUp, divideRoundHalfUp, ratioBps, vatOnMonthly } from "@/plan/money";
+import { averageRoundHalfUp, divideRoundHalfUp, parseAmountFils, ratioBps, vatOnMonthly } from "@/plan/money";
 
 describe("divideRoundHalfUp", () => {
   it("rounds halves up", () => {
@@ -45,5 +45,20 @@ describe("ratioBps", () => {
   });
   it("returns null when the denominator is 0 (no income)", () => {
     expect(ratioBps(23_681, 0)).toBeNull();
+  });
+});
+
+describe("parseAmountFils", () => {
+  it("reads printed amounts into whole fils without a float", () => {
+    expect(parseAmountFils("134,250.75")).toBe(13_425_075);
+    expect(parseAmountFils("120500")).toBe(12_050_000);
+    expect(parseAmountFils("0.1")).toBe(10);
+    expect(parseAmountFils("-1,050.05")).toBe(-105_005);
+  });
+
+  it("returns null for anything that is not an amount", () => {
+    expect(parseAmountFils("AED 10")).toBeNull();
+    expect(parseAmountFils("10.005")).toBeNull();
+    expect(parseAmountFils("")).toBeNull();
   });
 });

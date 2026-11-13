@@ -50,7 +50,6 @@ ID's is 3 lines of 30 (TD1). Both use the same check-digit rule, already in
 | `DOB_MATCH` | Date of birth in the passport's and the Emirates ID's machine-readable lines | Different: possibly two different people | Either not read | Yes (identity) |
 | `NATIONALITY_MATCH` | Nationality code in the same two places | Different (dual nationals can legitimately differ) | Either not read | **No** — shown only |
 | `EID_EMPLOYER` | Employer on the Emirates ID back and the company name | A different employer | No employer printed (for example UAE nationals, family-sponsored residents) | **No** — shown only |
-| `EMAIL_DOMAIN` | Applicant's work email and signing email domains, and the company name | Domains differ from each other or don't relate to the company. Free webmail is noted, not warned | — | Yes (identity) |
 | `IBAN_CONSISTENT` | IBAN on every statement | More than one IBAN | Fewer than 2 IBANs read | Yes (integrity) |
 | `STMT_CONTINUITY` | Closing balance of month N and opening balance of month N+1 | They differ | A balance not read | Yes (integrity) |
 | `STMT_COVERAGE` | Re-run of the upload check against the submit month | A month is missing | — | Yes (integrity) |
@@ -110,6 +109,7 @@ and `LICENCE_NUMBER` / `TRN_NUMBER` above.
 | Arabic name against the official ID record | Needs the official register |
 | Document authenticity (fonts, edits) | Cannot be done reliably; balance maths and PDF checks cover what they can |
 | Power of attorney | No upload box. If the signatory is not on the licence, `NAME_SIGNATORY` warns and the reviewer can use **Request document** |
+| Email domain check | The applicant (delivery contact) and the signatory can be different people, and contacts often use an agent's or free email: too many innocent mismatches (decision log #54) |
 | Currency conversion | Non-AED statements are left out of the money figures instead |
 | Business-age check | Licences show renewal dates inconsistently; shown only (§4) |
 

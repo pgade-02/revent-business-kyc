@@ -39,6 +39,16 @@ export function averageRoundHalfUp(values: readonly number[]): number | null {
   return divideRoundHalfUp(sum, values.length);
 }
 
+// "134,250.75" → 13425075. Read as text, never through a float. Null if it is not an amount.
+export function parseAmountFils(printed: string): number | null {
+  const match = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(printed.replace(/[,\s]/g, ""));
+  if (!match) return null;
+  const [, sign = "", whole = "", decimals = ""] = match;
+  const fils = Number(whole) * 100 + Number(decimals.padEnd(2, "0"));
+  if (!Number.isSafeInteger(fils)) return null;
+  return sign === "-" ? -fils : fils;
+}
+
 // numerator ÷ denominator in bps. Null when the denominator is 0 (e.g. no income).
 export function ratioBps(numerator: number, denominator: number): number | null {
   if (denominator === 0) return null;

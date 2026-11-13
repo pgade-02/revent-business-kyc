@@ -1,8 +1,7 @@
 import { z } from "zod";
 
 // The authorised signatory as typed by the customer (PRD §4, screen 6). The name is later
-// compared with the licence, passport and Emirates ID (NAME_SIGNATORY), and the signing
-// email's domain with the applicant's (EMAIL_DOMAIN).
+// compared with the licence, passport and Emirates ID (NAME_SIGNATORY).
 
 // UAE mobiles are typed as 05X…, 5X… or +971 5X…; all are stored as +9715XXXXXXXX.
 const uaeMobile = z

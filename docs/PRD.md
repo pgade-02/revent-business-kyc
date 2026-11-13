@@ -42,7 +42,7 @@ The frontend is light but real: a working Next.js app with Postgres and file sto
 |---|---|---|---|
 | 1 | Plan: products, quantity, services, term (24 / 36 / 48 months) | Yes, simple | Monthly amount feeds affordability; contract total decides the route |
 | 2 | Business verification hub (task list + "x of 5 complete", or "x of 4" when there is no self-disclosure task) | Yes | Entry point to the tasks |
-| 3 | Your account (name, work email, mobile, company) | Read-only, pre-filled from the seeded applicant | Records who applied; feeds the email-domain check |
+| 3 | Your account (name, work email, mobile, company) | Read-only, pre-filled from the seeded applicant | Records who applied and who Revent contacts for delivery |
 | 4 | Company details (name, licence no., year established, issuing authority, emirate, legal form, TRN (optional), registered address, "deliver to the registered address") | Yes | Typed values are cross-checked against documents |
 | 5 | Business documents (trade licence, tax certificate: VAT **or** Corporate Tax, bank statements for the last 6 months in one file or several) | Yes | Part 1 checks |
 | 6 | Authorised signatory ("I'm the authorised signatory" tick box, full name, email for DocuSign, mobile (optional), passport, Emirates ID front/back) | Yes | Part 1 checks |

@@ -143,7 +143,9 @@ Thresholds marked _(setting)_ live in `scoring_settings`. All are **starting val
 | `ID_FORMAT` | upload | Emirates ID starts 784 (15 digits), TRN 15 digits, IBAN starts AE with valid checksum | Warn → team |
 | `STMT_BALANCE` | upload | Each row: previous balance + in − out = balance; statement: opening + in − out = closing | Warn → team (could be misread or edited) |
 | `STMT_COVERAGE` | upload, re-run at submit | Statements together cover the `statementMonthsRequired` _(setting, 6)_ full calendar months before the submit month. At upload (not yet submitted) the current Dubai month stands in for the submit month | Needs a fix ("add October") |
-| `STMT_CONTINUITY` | submit | Closing balance of month N = opening balance of month N+1 | Warn → team |
+| `STMT_CONTINUITY` | submit | Closing balance of month N = opening balance of month N+1, in whole fils, for back-to-back statements of the same account | Warn → team |
+| `IBAN_CONSISTENT` | submit | Every statement has the same IBAN (never repeated in the detail) | Warn → team |
+| `STMT_CURRENCY` | submit | Every statement is in AED; others are left out of the money figures. A currency not read counts as AED | Warn → team |
 | `NAME_COMPANY` | submit | Company name matches across licence, tax certificate, statements and what was typed | Warn → team |
 | `NAME_SIGNATORY` | submit | Names in the signatory form, passport and Emirates ID front agree, and the signatory is among the managers on the licence (else "authority not proven"). Names are never quoted in the detail | Warn → team |
 | `EMIRATE_MATCH` | submit | Emirate on the licence = emirate typed | Warn → team |
@@ -153,7 +155,6 @@ Thresholds marked _(setting)_ live in `scoring_settings`. All are **starting val
 | `EID_EMPLOYER` | submit | Employer on the Emirates ID back is this company. Shown only, never scored | Warn → team |
 | `LICENCE_NUMBER` | submit | Licence number on document = number typed | Warn → team |
 | `TRN_NUMBER` | submit | TRN typed in Company details = TRN on the tax certificate (VAT or Corporate Tax). Skipped when no TRN was typed (the field is optional) | Warn → team |
-| `EMAIL_DOMAIN` | submit | Applicant's work email and signatory's signing email: domains match each other and relate to the company name. Free webmail (gmail, outlook…) is noted, not failed | Warn → team |
 
 Name matching: see `docs/document-specs/cross-checks.md` §3 (clean-up plus per-word Jaro-Winkler for people; exact after dropping UAE legal forms for companies; Arabic compared with Arabic only). A name mismatch is never a hard stop.
 
@@ -203,7 +204,7 @@ Score 0–100, higher = safer. All weights and thresholds live in the `scoring_s
 | Block | Weight | From |
 |---|---|---|
 | Documents complete and readable | 15 | Upload checks |
-| Identity and name consistency | 25 | `NAME_*`, `LICENCE_NUMBER`, `TRN_NUMBER`, `ID_FORMAT`, `EMAIL_DOMAIN` |
+| Identity and name consistency | 25 | `NAME_*`, `LICENCE_NUMBER`, `TRN_NUMBER`, `ID_FORMAT` |
 | Financial health | 50 | Money figures (sub-scores below) |
 | Statement integrity | 10 | `STMT_*` |
 
@@ -398,6 +399,7 @@ How to use: when an approach is tried, add a row. Status moves `trying` → `ado
 | 51 | 2026-11-13 | Cross-check spec for v1 (`docs/document-specs/cross-checks.md`), cut down from the owner's KYC rulebook. Date of birth and nationality compared match-only from the machine-readable lines (refines row 45 and SECURITY §6); Emirates ID employer read and compared, occupation shown only; licence status, TRN registration and QR checked by the reviewer by hand; activities, addresses, tax type shown only; no power of attorney upload; non-AED statements left out of money figures; no face matching | Keeps every automatic check reliable and explainable, and says plainly what v1 does not check | Owner decision | adopted |
 | 52 | 2026-11-13 | Person names compared by clean-up (case, accents, punctuation, word order, middle names, spacing) plus per-word Jaro-Winkler with two cut-offs in `scoring_settings.nameMatch` (match 9500 bps, possible match 8500 bps). Replaces a hand-written list of name spellings. Company names stay exact after dropping a reference list of UAE legal forms (`src/kyc/matching/legal-forms.ts`). Migration 0006 adds the cut-offs as a new settings version | A spelling list can never be complete and looks fitted to test data; a standard similarity score works for any name and sends spelling variants to the reviewer | `tests/kyc/matching/` (Winkler's published reference values reproduced), `tests/db/name-match-settings-migration.test.ts` | adopted |
 | 53 | 2026-11-14 | Refines row 51: date of birth and nationality are stored as ordinary document fields, read by code from the machine-readable lines only when every check digit is right, instead of being compared without storing. The reviewer sees match / different and opens the documents; the values are not displayed | The scanned text is not kept after upload, so Submit had nothing to compare. The passport file itself already holds these values, so storing two fields adds little risk, and a keyed hash or encryption added complexity for no real gain | `tests/kyc/checks/identity-match.test.ts`, `tests/kyc/documents/check-document.test.ts` | adopted |
+| 54 | 2026-11-14 | `EMAIL_DOMAIN` dropped from the v1 cross-checks (refines row 51) | The applicant is the contact person for delivery and can differ from the signatory; a contact can be an outside agent or use free webmail, so a domain mismatch has too many innocent causes and would only add warnings | Owner decision | dropped |
 
 ## 10. Later (not v1)
 
