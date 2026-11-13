@@ -40,6 +40,7 @@
     "continueToVerification": "Continue to business verification"
   },
   "Checks": {
+    "MRZ_CHECK_DIGITS": "We couldn’t read the code lines on the back clearly. Please upload a sharper photo of the back of your Emirates ID.",
     "DOC_EXPIRED": "This document has expired. Please upload a valid one.",
     "FILE_DUPLICATE": "You’ve already uploaded this file. Please upload the right document.",
     "DOC_UNREADABLE": "Photo not clear. Please upload a sharper, high-resolution photo under {maxMb} MB.",

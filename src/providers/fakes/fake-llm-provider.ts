@@ -7,6 +7,7 @@ import type { LlmProvider, LlmResult } from "@/kyc/interfaces/llm-provider";
 const labels: Record<string, RegExp> = {
   licenceNumber: /^licen[cs]e\s*(no|number)\b/i,
   companyName: /^(company|trade)\s*name\b/i,
+  issueDate: /^(issue\s*date|issuing\s*date|date\s*of\s*issue)\b/i,
   expiryDate: /^(expiry\s*date|date\s*of\s*expiry|valid\s*until)\b/i,
   trn: /^(trn|tax\s*registration\s*number)\b/i,
   accountHolder: /^account\s*holder\b/i,
