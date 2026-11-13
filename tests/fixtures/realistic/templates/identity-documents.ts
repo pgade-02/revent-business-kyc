@@ -68,8 +68,8 @@ export function emiratesIdBackHtml(person: Person, lines = emiratesIdMrz(person)
       <div class="row" style="justify-content:flex-start;gap:30px;margin-top:6px">
         <div style="text-align:center">${chip}<div style="font-size:15px;margin-top:6px">${e(serial)}</div></div>
         <div style="flex:1">
-          ${line("Occupation", "General Manager", "المهنة", "مدير عام")}
-          ${line("Employer", "Specimen Employer L.L.C.", "صاحب العمل", "صاحب عمل نموذجي")}
+          ${line("Occupation", person.occupation.en, "المهنة", person.occupation.ar)}
+          ${line("Employer", person.employer.en, "صاحب العمل", person.employer.ar)}
           ${line("Issuing Place", person.emiratesIdIssuingPlace, "مكان الإصدار", emirateAr[person.emiratesIdIssuingPlace] ?? "")}
           <div class="row" style="font-size:10px;color:#4b5563;margin-top:4px"><div>If you find this card, please return it to the issuing<br/>organization or to the nearest police station.</div>
             <div class="ar">عند العثور على هذه البطاقة يرجى إرجاعها إلى جهة<br/>إصدارها أو إلى أقرب مركز شرطة.</div></div>

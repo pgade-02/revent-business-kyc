@@ -6,7 +6,18 @@ import type { ExtractedField } from "./extracted-field";
 import { fieldSchemas, type RawField } from "./field-schemas";
 import { maskText, unmask } from "./masking";
 
-export type ExtractedFields = Readonly<Record<string, ExtractedField<string>>>;
+export type ExtractedValue = ExtractedField<string> | ExtractedField<readonly string[]>;
+export type ExtractedFields = Readonly<Record<string, ExtractedValue>>;
+
+export function textField(fields: ExtractedFields, name: string): ExtractedField<string> | undefined {
+  const found = fields[name];
+  return found && typeof found.value === "string" ? { ...found, value: found.value } : undefined;
+}
+
+export function listField(fields: ExtractedFields, name: string): ExtractedField<readonly string[]> | undefined {
+  const found = fields[name];
+  return found && typeof found.value !== "string" ? { ...found, value: found.value } : undefined;
+}
 
 export type ExtractionResult =
   | { ok: true; fields: ExtractedFields }
@@ -35,9 +46,14 @@ function withTimeout(call: Promise<LlmResult>, timeoutMs: number): Promise<LlmRe
 }
 
 function toExtractedFields(raw: Record<string, RawField>, originals: ReadonlyMap<string, string>): ExtractedFields {
-  const fields: Record<string, ExtractedField<string>> = {};
-  for (const [name, value] of Object.entries(raw)) {
-    if (value) fields[name] = { value: unmask(value.value, originals), page: value.page, confidenceBps: value.confidencePercent * 100 };
+  const fields: Record<string, ExtractedValue> = {};
+  for (const [name, read] of Object.entries(raw)) {
+    if (!read) continue;
+    const where = { page: read.page, confidenceBps: read.confidencePercent * 100 };
+    fields[name] =
+      "values" in read
+        ? { ...where, value: read.values.map((value) => unmask(value, originals)) }
+        : { ...where, value: unmask(read.value, originals) };
   }
   return fields;
 }

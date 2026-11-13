@@ -7,7 +7,7 @@ import { checkEidDates } from "../checks/eid-dates";
 import { checkIdFormat } from "../checks/id-format";
 import { checkMrzCheckDigits } from "../checks/mrz-check-digits";
 import { findEmiratesIdMrz, mrzExpiryDate } from "../extraction/emirates-id-mrz";
-import { extractFields, type ExtractedFields } from "../extraction/extract-fields";
+import { extractFields, textField, type ExtractedFields } from "../extraction/extract-fields";
 import { readPages } from "../extraction/read-pages";
 import type { AcceptedFile } from "../intake/intake-file";
 import type { LlmProvider } from "../interfaces/llm-provider";
@@ -55,19 +55,21 @@ function findMrz(pages: PageText[]) {
 function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields, pages: PageText[]): CheckResult[] {
   const { documentId, slot, today, expiresSoonDays } = input;
   const results: CheckResult[] = [];
-  let { expiryDate } = fields;
+  let expiryDate = textField(fields, "expiryDate");
 
   if (slot === "emirates_id_back") {
     const found = findMrz(pages);
     results.push(checkMrzCheckDigits(documentId, found));
     if (!expiryDate && found) expiryDate = { value: mrzExpiryDate(found.mrz), page: found.page, confidenceBps: 10_000 };
   }
-  if (slot === "emirates_id_front") results.push(checkEidDates({ documentId, issueDate: fields.issueDate, expiryDate, today }));
+  if (slot === "emirates_id_front") results.push(checkEidDates({ documentId, issueDate: textField(fields, "issueDate"), expiryDate, today }));
   if (SLOTS_WITH_EXPIRY.includes(slot)) {
     results.push(checkDocExpired({ documentId, expiryDate, today }));
     results.push(checkDocExpiresSoon({ documentId, expiryDate, today, expiresSoonDays }));
   }
-  const { emiratesIdNumber, trn, iban } = fields;
+  const emiratesIdNumber = textField(fields, "emiratesIdNumber");
+  const trn = textField(fields, "trn");
+  const iban = textField(fields, "iban");
   if (emiratesIdNumber || trn || iban) results.push(checkIdFormat({ documentId, emiratesId: emiratesIdNumber, trn, iban }));
   return results;
 }

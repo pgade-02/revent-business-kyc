@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractFields } from "@/kyc/extraction/extract-fields";
+import { extractFields, listField, textField } from "@/kyc/extraction/extract-fields";
 import type { LlmProvider, LlmRequest, LlmResult } from "@/kyc/interfaces/llm-provider";
 import { createBrokenLlm, labelledLinesLlm } from "@/providers/fakes/fake-llm-provider";
 import { syntheticTexts } from "../../fixtures/synthetic-documents";
@@ -29,6 +29,34 @@ describe("extractFields", () => {
         expiryDate: { value: "2028-02-20", page: 1, confidenceBps: 9_500 },
       },
     });
+  });
+
+  it("reads the licence's managers and activities as lists", async () => {
+    const result = await extractFields({ slot: "trade_licence", pages: pages(syntheticTexts.tradeLicence), llm: labelledLinesLlm, timeoutMs: 1_000 });
+    if (!result.ok) throw new Error(result.reason);
+    expect(listField(result.fields, "managerNames")?.value).toEqual(["Demo Customer"]);
+    expect(listField(result.fields, "activities")?.value).toEqual(["General Trading", "Computer Equipment Trading"]);
+    expect(textField(result.fields, "emirate")?.value).toBe("Dubai");
+    expect(textField(result.fields, "managerNames")).toBeUndefined();
+    expect(listField(result.fields, "emirate")).toBeUndefined();
+  });
+
+  it("reads the statement's currency and balances, and the Emirates ID employer", async () => {
+    const statement = await extractFields({ slot: "bank_statement", pages: pages(syntheticTexts.bankStatement), llm: labelledLinesLlm, timeoutMs: 1_000 });
+    const back = await extractFields({ slot: "emirates_id_back", pages: pages(syntheticTexts.emiratesIdBack), llm: labelledLinesLlm, timeoutMs: 1_000 });
+    if (!statement.ok || !back.ok) throw new Error("extraction failed");
+    expect(textField(statement.fields, "currency")?.value).toBe("AED");
+    expect(textField(statement.fields, "closingBalance")?.value).toBe("134250.75");
+    expect(textField(back.fields, "employer")?.value).toBe("Demo Trading LLC");
+    expect(textField(back.fields, "occupation")?.value).toBe("General Manager");
+  });
+
+  it("rejects a list field sent as plain text", async () => {
+    const { llm } = scriptedLlm([
+      { ok: true, json: { managerNames: { value: "Demo Customer", page: 1, confidencePercent: 90 } } },
+      { ok: true, json: { managerNames: { value: "Demo Customer", page: 1, confidencePercent: 90 } } },
+    ]);
+    expect(await extractFields({ slot: "trade_licence", pages: pages("x"), llm, timeoutMs: 1_000 })).toEqual({ ok: false, reason: "INVALID_OUTPUT" });
   });
 
   it("never sends the real ID number to the AI", async () => {

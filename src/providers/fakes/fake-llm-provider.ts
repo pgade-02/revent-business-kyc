@@ -17,7 +17,20 @@ const labels: Record<string, RegExp> = {
   fullName: /^(full\s*)?name\b/i,
   passportNumber: /^passport\s*(no|number)\b/i,
   emiratesIdNumber: /^id\s*number\b/i,
+  emirate: /^emirate\b/i,
+  address: /^(registered\s*)?address\b/i,
+  managerNames: /^(manager|authori[sz]ed\s*signatory)\b/i,
+  activities: /^activit(y|ies)\b/i,
+  taxType: /^tax\s*type\b/i,
+  currency: /^currency\b/i,
+  openingBalance: /^opening\s*balance\b/i,
+  closingBalance: /^closing\s*balance\b/i,
+  employer: /^employer\b/i,
+  occupation: /^occupation\b/i,
 };
+
+// List fields are printed as "Label: first; second".
+const listKeys = new Set(["managerNames", "activities"]);
 
 function findField(input: string, label: RegExp | undefined) {
   if (!label) return null;
@@ -36,7 +49,14 @@ function findField(input: string, label: RegExp | undefined) {
 export const labelledLinesLlm: LlmProvider = {
   async generateJson({ input, outputSchema }): Promise<LlmResult> {
     if (!(outputSchema instanceof z.ZodObject)) return { ok: false, reason: "ERROR" };
-    const json = Object.fromEntries(Object.keys(outputSchema.shape).map((key) => [key, findField(input, labels[key])]));
+    const json = Object.fromEntries(
+      Object.keys(outputSchema.shape).map((key) => {
+        const found = findField(input, labels[key]);
+        if (!found || !listKeys.has(key)) return [key, found];
+        const { value, ...where } = found;
+        return [key, { ...where, values: value.split(";").map((item) => item.trim()) }];
+      }),
+    );
     return { ok: true, json };
   },
 };

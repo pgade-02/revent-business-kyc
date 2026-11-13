@@ -18,6 +18,8 @@ export type Person = {
   emiratesIdIssued: string;
   emiratesIdExpires: string;
   emiratesIdIssuingPlace: string;
+  occupation: { en: string; ar: string };
+  employer: { en: string; ar: string }; // the company on the Emirates ID back
 };
 
 export type Company = {
@@ -59,6 +61,8 @@ export const saraHaddad: Person = {
   emiratesIdIssued: "2026-10-01",
   emiratesIdExpires: "2028-09-30",
   emiratesIdIssuingPlace: "Dubai",
+  occupation: { en: "General Manager", ar: "مدير عام" },
+  employer: { en: "Falcon Demo Trading L.L.C.", ar: "فالكون ديمو للتجارة ش.ذ.م.م" },
 };
 
 export const omarFarouk: Person = {
@@ -76,6 +80,8 @@ export const omarFarouk: Person = {
   emiratesIdIssued: "2025-12-16",
   emiratesIdExpires: "2027-12-15",
   emiratesIdIssuingPlace: "Sharjah",
+  occupation: { en: "Partner", ar: "شريك" },
+  employer: { en: "Horizon Specimen Contracting L.L.C.", ar: "هورايزن سبيسيمن للمقاولات ش.ذ.م.م" },
 };
 
 export const companyA: Company = {

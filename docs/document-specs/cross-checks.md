@@ -1,6 +1,6 @@
 # Cross-checks — spec (v1)
 
-Status: **approved 2026-11-13** (decision log #51). Nothing here is built yet.
+Status: **approved 2026-11-13** (decision log #51). Built so far: the matching rules (§3), `LICENCE_NUMBER`, `TRN_NUMBER`, `NAME_COMPANY`, and the AI fields in §1 (tested with the stand-in reader, not yet with the real AI). Passport lines (code) and the other checks are not built.
 
 Cross-checks run **once, after Submit** (Part 2). They compare documents with each other
 and with what the customer typed. Each one only ever **warns the reviewer**; none blocks

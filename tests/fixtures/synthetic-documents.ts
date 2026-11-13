@@ -11,19 +11,27 @@ export const syntheticTexts = {
     "Licence Number: CN-1234567",
     "Company Name: Demo Trading LLC",
     "Legal Form: Limited Liability Company",
+    "Emirate: Dubai",
+    "Address: Office 101, Demo Tower, Dubai",
+    "Issue Date: 2021-03-02",
     "Expiry Date: 2027-03-01",
+    "Activities: General Trading; Computer Equipment Trading",
+    "Manager: Demo Customer",
   ].join("\n"),
 
   taxCertificate: (trn: string) =>
-    ["TAX REGISTRATION CERTIFICATE", "Corporate Tax", `TRN: ${trn}`, "Company Name: Demo Trading LLC"].join("\n"),
+    ["TAX REGISTRATION CERTIFICATE", "Corporate Tax", "Tax Type: corporate_tax", `TRN: ${trn}`, "Company Name: Demo Trading LLC"].join("\n"),
 
   bankStatement: [
     "DEMO BANK",
     "ACCOUNT STATEMENT",
     "Account Holder: Demo Trading LLC",
     "IBAN: AE070331234567890123456",
+    "Currency: AED",
     "Period From: 2026-05-01",
     "Period To: 2026-05-31",
+    "Opening Balance: 120500.00",
+    "Closing Balance: 134250.75",
   ].join("\n"),
 
   invoice: ["TAX INVOICE", "Invoice No: INV-0042", "Company Name: Demo Trading LLC", "Total: AED 1,050.00"].join("\n"),
@@ -47,6 +55,8 @@ export const syntheticTexts = {
 
   emiratesIdBack: [
     "Expiry Date: 2028-02-20",
+    "Occupation: General Manager",
+    "Employer: Demo Trading LLC",
     mrz("ILARE784199000000001", 30),
     "9001014M2802202ARE<<<<<<<<<<<4",
     mrz("CUSTOMER<<DEMO", 30),
