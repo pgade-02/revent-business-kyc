@@ -107,7 +107,7 @@ function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields): CheckR
 
 // Part 1 for one uploaded file (ARCHITECTURE §2): read the pages, run the quick
 // checks, fill the form, check the fields, and decide what the customer sees.
-// Cheap code checks run before the AI, so a blurred or wrong document never costs an AI call.
+// Too small or blurred stops before OCR, which would only read noise; everything else is read.
 export async function checkDocument(input: CheckDocumentInput): Promise<CheckDocumentOutcome> {
   const { documentId, slot, file, readers, limits } = input;
   const unreadableWith = (pages: PageText[] | null) =>
@@ -140,8 +140,9 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
   const unreadable = unreadableWith(read.pages);
   if (unreadable.status === "fail") return outcome([unreadable], null, null);
 
+  // A wrong type is reported but does not stop reading: OCR has already run, and a false
+  // alarm must not turn every later check into "could not check" (decision log #60).
   const wrongType = checkDocWrongType({ documentId, slot, pages: read.pages });
-  if (wrongType.status === "fail") return outcome([unreadable, wrongType], null, null);
 
   const reading = { pages: read.pages, llm: readers.llm, timeoutMs: limits.llmTimeoutMs };
   const [extraction, rows] = await Promise.all([

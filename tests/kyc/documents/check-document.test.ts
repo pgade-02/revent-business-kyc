@@ -77,13 +77,18 @@ describe("checkDocument", () => {
     expect(outcome.results.find((result) => result.code === "DOC_EXPIRED")?.customerMessageKey).toBe("Checks.DOC_EXPIRED");
   });
 
-  it("stops before the AI when the wrong document is uploaded", async () => {
+  it("asks for the right document but still reads the fields, so later checks can run", async () => {
+    const outcome = await run("emirates_id_front", syntheticTexts.emiratesIdBack);
+    expect(outcome.status).toBe("needs_fix");
+    expect(outcome.results.find((result) => result.code === "DOC_WRONG_TYPE")?.status).toBe("fail");
+    expect(outcome.fields?.expiryDate?.value).toBe("2028-02-20");
+  });
+
+  it("still tells the customer to replace a wrong document when the AI is unavailable", async () => {
     const outcome = await run("passport", syntheticTexts.foreignIdCard, {
       readers: { pdfTextReader: { readPages: async () => [] }, ocr: createFakeOcrProvider(new Map([[photo(1).sha256, [syntheticTexts.foreignIdCard]]])), llm: createBrokenLlm("unavailable") },
     });
-    expect(outcome.status).toBe("needs_fix");
-    expect(outcome.problem).toBeNull(); // the AI was never called, so it could not fail
-    expect(codes(outcome.results)).toEqual(["DOC_UNREADABLE:pass", "DOC_WRONG_TYPE:fail"]);
+    expect(outcome).toMatchObject({ status: "needs_fix", problem: "LLM_UNAVAILABLE" });
   });
 
   it("asks for a clearer photo when the picture is too small", async () => {

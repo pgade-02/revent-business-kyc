@@ -67,7 +67,8 @@ describe("document upload and processing", () => {
     const { documentId, result } = await uploadAndProcess("bank_statement", await makeTextPdf([syntheticTexts.invoice]));
     expect(result).toEqual({ status: "needs_fix", customerMessageKeys: ["Checks.DOC_WRONG_TYPE.bank_statement"] });
     const saved = await db.select().from(checkResults).where(eq(checkResults.documentId, documentId));
-    expect(saved.map((row) => row.code)).toEqual(["FILE_DUPLICATE", "FILE_REUSED", "DOC_UNREADABLE", "DOC_WRONG_TYPE"]);
+    // Reading goes on after a wrong type, so the statement check runs and finds no rows.
+    expect(saved.map((row) => `${row.code}:${row.status}`)).toEqual(["FILE_DUPLICATE:pass", "FILE_REUSED:pass", "DOC_UNREADABLE:pass", "DOC_WRONG_TYPE:fail", "STMT_BALANCE:skipped"]);
   });
 
   it("sends a photo to review while no OCR provider is connected", async () => {
