@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CheckResult } from "@/kyc/checks/check-result";
 import { buildFindings, type Findings } from "@/kyc/insights/findings";
-import { writeInsights } from "@/kyc/insights/write-insights";
+import { insightsRequest, writeInsights } from "@/kyc/insights/write-insights";
 import type { LlmProvider, LlmRequest } from "@/kyc/interfaces/llm-provider";
 import type { Score } from "@/kyc/scoring/score";
 import type { MoneyFigures } from "@/kyc/statements/money-figures";
@@ -63,6 +63,14 @@ describe("buildFindings", () => {
 describe("writeInsights", () => {
   it("never writes a company profile, only patterns and things to check", async () => {
     expect(Object.keys(await writeInsights(findings, ai(labelledLinesLlm)))).toEqual(["patterns", "thingsToCheck", "source"]);
+  });
+
+  it("only lets a pattern rest on this application's real finding names", () => {
+    const schema = insightsRequest(findings, 1_000).outputSchema;
+    const pattern = (findingCode: string) => ({ patterns: [{ text: "x", findingCode, evidence: null }], thingsToCheck: [] });
+    expect(schema.safeParse(pattern("topPayerShare")).success).toBe(true);
+    expect(schema.safeParse(pattern("EID_EMPLOYER")).success).toBe(true);
+    expect(schema.safeParse(pattern("AVG_INCOME")).success).toBe(false);
   });
 
   it("keeps a faithful AI answer, with its evidence link", async () => {

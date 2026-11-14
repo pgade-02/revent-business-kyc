@@ -18,9 +18,12 @@
     "demo:documents": "tsx scripts/demo-check-documents.ts",
     "db:studio": "drizzle-kit studio",
     "check:documents": "tsx scripts/check-documents-with-ai.ts",
-    "generate:documents": "tsx scripts/generate-test-documents.ts"
+    "generate:documents": "tsx scripts/generate-test-documents.ts",
+    "benchmark:insights": "tsx scripts/benchmark-insights.ts",
+    "benchmark:documents": "tsx scripts/benchmark-documents.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@base-ui/react": "^1.9.0",
     "@electric-sql/pglite": "^0.5.16",
     "class-variance-authority": "^0.7.1",

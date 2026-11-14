@@ -10,7 +10,10 @@ export type LlmRequest = {
 
 // The provider returns the raw JSON. src/kyc validates it with the schema itself,
 // so a provider can never hand back data that skipped validation.
-export type LlmResult = { ok: true; json: unknown } | { ok: false; reason: "TIMEOUT" | "ERROR" };
+// usage, when the provider reports it, feeds the cost and speed benchmark; outputTokens
+// includes any thinking tokens, since they are billed as output.
+export type LlmUsage = { inputTokens: number; outputTokens: number };
+export type LlmResult = { ok: true; json: unknown; usage?: LlmUsage } | { ok: false; reason: "TIMEOUT" | "ERROR" };
 
 export interface LlmProvider {
   generateJson(request: LlmRequest): Promise<LlmResult>;
