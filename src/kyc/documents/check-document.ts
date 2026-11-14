@@ -18,7 +18,7 @@ import type { AcceptedFile } from "../intake/intake-file";
 import type { LlmProvider } from "../interfaces/llm-provider";
 import type { OcrProvider } from "../interfaces/ocr-provider";
 import type { PageText, PdfTextReader } from "../interfaces/pdf-text-reader";
-import { readTransactions } from "../statements/read-transactions";
+import { readStatementTable } from "../statements/read-statement-table";
 import type { Transaction } from "../statements/transaction";
 import { decideDocumentStatus, type DocumentStatus } from "./document-status";
 import type { DocumentSlot } from "./slots";
@@ -47,7 +47,7 @@ export type CheckDocumentOutcome = {
   fields: ExtractedFields | null;
   transactions: Transaction[]; // bank statements only
   ocrPages: number[];
-  problem: "OCR_FAILED" | "LLM_UNAVAILABLE" | "INVALID_OUTPUT" | null; // why reading failed, for logs
+  problem: "OCR_FAILED" | "LLM_UNAVAILABLE" | "INVALID_OUTPUT" | "NO_TABLE" | "UNREADABLE_ROW" | null; // why reading failed, for logs
 };
 
 function findOnPage<T>(pages: PageText[], find: (text: string) => T | null) {
@@ -80,6 +80,17 @@ function readMrz({ documentId, slot, today }: CheckDocumentInput, pages: PageTex
   return null;
 }
 
+// Statement rows come from the tables OCR returns, read by code (decision log #64). A PDF's
+// text layer loses the columns, so every page goes through OCR; a photo already has.
+async function statementRows(file: AcceptedFile, read: { pages: PageText[]; ocrPages: number[] }, ocr: OcrProvider) {
+  const allPages = Array.from({ length: file.pageCount }, (_, index) => index + 1);
+  const alreadyOcr = file.kind !== "pdf" || allPages.every((page) => read.ocrPages.includes(page));
+  const ocrRead = alreadyOcr
+    ? { ok: true as const, pages: read.pages }
+    : await ocr.read({ bytes: file.bytes, kind: file.kind, pages: allPages });
+  return ocrRead.ok ? readStatementTable(ocrRead.pages) : { ok: false as const, reason: "OCR_FAILED" as const };
+}
+
 function statementBalance(documentId: string, fields: ExtractedFields, transactions: Transaction[]): CheckResult {
   const fils = (name: string) => {
     const field = textField(fields, name);
@@ -93,7 +104,8 @@ function fieldChecks(input: CheckDocumentInput, fields: ExtractedFields): CheckR
   const results: CheckResult[] = [];
   const expiryDate = textField(fields, "expiryDate");
 
-  if (slot === "emirates_id_front") results.push(checkEidDates({ documentId, issueDate: textField(fields, "issueDate"), expiryDate, today }));
+  if (slot === "emirates_id_front")
+    results.push(checkEidDates({ documentId, issueDate: textField(fields, "issueDate"), expiryDate, today }));
   if (SLOTS_WITH_EXPIRY.includes(slot)) {
     results.push(checkDocExpired({ documentId, expiryDate, today }));
     results.push(checkDocExpiresSoon({ documentId, expiryDate, today, expiresSoonDays }));
@@ -123,12 +135,18 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
 
   // Too small or blurred: ask for a new photo before paying for OCR.
   const photo = unreadableWith(null);
-  if (photo.status === "fail") return { status: decideDocumentStatus([photo], true), results: [photo], fields: null, transactions: [], ocrPages: [], problem: null };
+  if (photo.status === "fail")
+    return { status: decideDocumentStatus([photo], true), results: [photo], fields: null, transactions: [], ocrPages: [], problem: null };
 
   const read = await readPages({ file, ...readers, minPageTextChars: limits.minPageTextChars });
   if (!read.ok) return { status: "needs_review", results: [], fields: null, transactions: [], ocrPages: [], problem: "OCR_FAILED" };
 
-  const outcome = (results: CheckResult[], fields: ExtractedFields | null, problem: CheckDocumentOutcome["problem"], transactions: Transaction[] = []) => ({
+  const outcome = (
+    results: CheckResult[],
+    fields: ExtractedFields | null,
+    problem: CheckDocumentOutcome["problem"],
+    transactions: Transaction[] = [],
+  ) => ({
     status: decideDocumentStatus(results, problem === null),
     results,
     fields,
@@ -144,10 +162,9 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
   // alarm must not turn every later check into "could not check" (decision log #60).
   const wrongType = checkDocWrongType({ documentId, slot, pages: read.pages });
 
-  const reading = { pages: read.pages, llm: readers.llm, timeoutMs: limits.llmTimeoutMs };
   const [extraction, rows] = await Promise.all([
-    extractFields({ slot, ...reading }),
-    slot === "bank_statement" ? readTransactions(reading) : Promise.resolve(null),
+    extractFields({ slot, pages: read.pages, llm: readers.llm, timeoutMs: limits.llmTimeoutMs }),
+    slot === "bank_statement" ? statementRows(file, read, readers.ocr) : Promise.resolve(null),
   ]);
   if (!extraction.ok) return outcome([unreadable, wrongType], null, extraction.reason);
   if (rows && !rows.ok) return outcome([unreadable, wrongType], extraction.fields, rows.reason);
@@ -157,5 +174,10 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
   const fields = { ...mrz?.fields, ...extraction.fields };
   const transactions = rows?.data ?? [];
   const balance = rows ? [statementBalance(documentId, fields, transactions)] : [];
-  return outcome([unreadable, wrongType, ...(mrz ? [mrz.check] : []), ...fieldChecks(input, fields), ...balance], fields, null, transactions);
+  return outcome(
+    [unreadable, wrongType, ...(mrz ? [mrz.check] : []), ...fieldChecks(input, fields), ...balance],
+    fields,
+    null,
+    transactions,
+  );
 }

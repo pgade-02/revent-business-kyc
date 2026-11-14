@@ -53,7 +53,7 @@ describe("checkDocument", () => {
 
   it("sends a statement to Needs review when its rows cannot be read, never half-counted", async () => {
     const outcome = await run("bank_statement", syntheticTexts.bankStatement.replace("| 20,000.00 |", "| twenty thousand |"));
-    expect(outcome).toMatchObject({ status: "needs_review", problem: "INVALID_OUTPUT", transactions: [] });
+    expect(outcome).toMatchObject({ status: "needs_review", problem: "UNREADABLE_ROW", transactions: [] });
   });
 
   it("saves the passport's birth date and nationality from its machine-readable lines", async () => {

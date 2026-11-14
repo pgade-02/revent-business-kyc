@@ -49,7 +49,12 @@ afterAll(async () => {
   await rm(storeDir, { recursive: true, force: true });
 });
 
-async function uploadAndProcess(slot: Parameters<typeof uploadDocument>[1]["slot"], bytes: Uint8Array, forApplication = applicationId, owner = "seed-customer") {
+async function uploadAndProcess(
+  slot: Parameters<typeof uploadDocument>[1]["slot"],
+  bytes: Uint8Array,
+  forApplication = applicationId,
+  owner = "seed-customer",
+) {
   const uploaded = await uploadDocument(services, { applicationId: forApplication, slot, bytes });
   if (!uploaded.ok) throw new Error(uploaded.reason);
   const document = await findDocument(db, uploaded.documentId);
@@ -67,8 +72,13 @@ describe("document upload and processing", () => {
     const { documentId, result } = await uploadAndProcess("bank_statement", await makeTextPdf([syntheticTexts.invoice]));
     expect(result).toEqual({ status: "needs_fix", customerMessageKeys: ["Checks.DOC_WRONG_TYPE.bank_statement"] });
     const saved = await db.select().from(checkResults).where(eq(checkResults.documentId, documentId));
-    // Reading goes on after a wrong type, so the statement check runs and finds no rows.
-    expect(saved.map((row) => `${row.code}:${row.status}`)).toEqual(["FILE_DUPLICATE:pass", "FILE_REUSED:pass", "DOC_UNREADABLE:pass", "DOC_WRONG_TYPE:fail", "STMT_BALANCE:skipped"]);
+    // Statement rows need OCR, which this test app does not have, so no balance check runs.
+    expect(saved.map((row) => `${row.code}:${row.status}`)).toEqual([
+      "FILE_DUPLICATE:pass",
+      "FILE_REUSED:pass",
+      "DOC_UNREADABLE:pass",
+      "DOC_WRONG_TYPE:fail",
+    ]);
   });
 
   it("sends a photo to review while no OCR provider is connected", async () => {
@@ -106,7 +116,11 @@ describe("document upload and processing", () => {
     await uploadAndProcess("bank_statement", bytes, other.applicationId, "test-other-customer");
 
     const { documentId } = await uploadAndProcess("bank_statement", bytes);
-    const [reused] = await db.select().from(checkResults).where(eq(checkResults.documentId, documentId)).then((rows) => rows.filter((row) => row.code === "FILE_REUSED"));
+    const [reused] = await db
+      .select()
+      .from(checkResults)
+      .where(eq(checkResults.documentId, documentId))
+      .then((rows) => rows.filter((row) => row.code === "FILE_REUSED"));
     expect(reused).toMatchObject({ status: "warn", customerMessageKey: null });
   });
 });
