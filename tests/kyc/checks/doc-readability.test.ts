@@ -60,6 +60,13 @@ describe("DOC_WRONG_TYPE", () => {
     );
   });
 
+  it("recognises machine-readable lines that OCR read with the letters spaced out", () => {
+    const spaced = (text: string) => text.replace(/^([A-Z0-9<]{30,44})$/gm, (line) => line.split("").join(" "));
+    expect(check("emirates_id_back", spaced(syntheticTexts.emiratesIdBack)).status).toBe("pass");
+    expect(check("passport", spaced(syntheticTexts.passport("2031-08-14"))).status).toBe("pass");
+    expect(check("emirates_id_front", spaced(syntheticTexts.emiratesIdBack)).status).toBe("fail");
+  });
+
   it("fails an invoice in the bank statement box (no IBAN)", () => {
     expect(check("bank_statement", syntheticTexts.invoice)).toMatchObject({
       status: "fail",

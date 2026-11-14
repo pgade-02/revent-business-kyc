@@ -8,10 +8,14 @@ const ID_CARD_MRZ = /I[A-Z<]ARE/; // machine-readable lines on the back of an Em
 const EMIRATES_ID_NUMBER = /784[-\s]?\d{4}[-\s]?\d{7}[-\s]?\d/;
 const UAE_IBAN = /AE\d{2}(?:\s?\d){19}/;
 
+// OCR often reads the widely spaced machine-readable letters as "I L A R E", so those
+// patterns are matched with whitespace removed, as the line readers do.
+const hasMrz = (pattern: RegExp, text: string) => pattern.test(text.replace(/\s+/g, ""));
+
 const fingerprints: Record<DocumentSlot, (text: string) => boolean> = {
-  passport: (text) => PASSPORT_MRZ.test(text),
-  emirates_id_back: (text) => ID_CARD_MRZ.test(text),
-  emirates_id_front: (text) => EMIRATES_ID_NUMBER.test(text) && !ID_CARD_MRZ.test(text),
+  passport: (text) => hasMrz(PASSPORT_MRZ, text),
+  emirates_id_back: (text) => hasMrz(ID_CARD_MRZ, text),
+  emirates_id_front: (text) => EMIRATES_ID_NUMBER.test(text) && !hasMrz(ID_CARD_MRZ, text),
   bank_statement: (text) => UAE_IBAN.test(text),
   tax_certificate: (text) => /TAX\s+REGISTRATION|\bTRN\b|CORPORATE\s+TAX|ضريبة/.test(text),
   trade_licence: (text) => /LICEN[CS]E|رخصة/.test(text),
