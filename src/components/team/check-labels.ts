@@ -2,6 +2,7 @@
 export const CHECK_LABEL: Readonly<Record<string, string>> = {
   FILE_DUPLICATE: "Not uploaded twice",
   FILE_REUSED: "Not used in another customer's application",
+  DOC_READING: "Read completely",
   DOC_UNREADABLE: "Clear enough to read",
   DOC_WRONG_TYPE: "The right kind of document",
   DOC_EXPIRED: "Not expired",

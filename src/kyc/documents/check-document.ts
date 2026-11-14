@@ -1,6 +1,7 @@
 import { parseAmountFils } from "../../plan/money";
 import type { CheckResult } from "../checks/check-result";
 import { checkDocExpired } from "../checks/doc-expired";
+import { checkDocReading, type ReadingProblem } from "../checks/doc-reading";
 import { checkDocExpiresSoon } from "../checks/doc-expires-soon";
 import { checkDocUnreadable } from "../checks/doc-unreadable";
 import { checkDocWrongType } from "../checks/doc-wrong-type";
@@ -47,7 +48,7 @@ export type CheckDocumentOutcome = {
   fields: ExtractedFields | null;
   transactions: Transaction[]; // bank statements only
   ocrPages: number[];
-  problem: "OCR_FAILED" | "LLM_UNAVAILABLE" | "INVALID_OUTPUT" | "NO_TABLE" | "UNREADABLE_ROW" | null; // why reading failed, for logs
+  problem: ReadingProblem | null; // why reading failed; also saved as a DOC_READING result
 };
 
 function findOnPage<T>(pages: PageText[], find: (text: string) => T | null) {
@@ -139,21 +140,20 @@ export async function checkDocument(input: CheckDocumentInput): Promise<CheckDoc
     return { status: decideDocumentStatus([photo], true), results: [photo], fields: null, transactions: [], ocrPages: [], problem: null };
 
   const read = await readPages({ file, ...readers, minPageTextChars: limits.minPageTextChars });
-  if (!read.ok) return { status: "needs_review", results: [], fields: null, transactions: [], ocrPages: [], problem: "OCR_FAILED" };
+  if (!read.ok) {
+    const results = [checkDocReading(documentId, "OCR_FAILED")];
+    return { status: decideDocumentStatus(results, false), results, fields: null, transactions: [], ocrPages: [], problem: "OCR_FAILED" };
+  }
 
   const outcome = (
-    results: CheckResult[],
+    checks: CheckResult[],
     fields: ExtractedFields | null,
-    problem: CheckDocumentOutcome["problem"],
+    problem: ReadingProblem | null,
     transactions: Transaction[] = [],
-  ) => ({
-    status: decideDocumentStatus(results, problem === null),
-    results,
-    fields,
-    transactions,
-    ocrPages: read.ocrPages,
-    problem,
-  });
+  ) => {
+    const results = problem ? [...checks, checkDocReading(documentId, problem)] : checks;
+    return { status: decideDocumentStatus(results, problem === null), results, fields, transactions, ocrPages: read.ocrPages, problem };
+  };
 
   const unreadable = unreadableWith(read.pages);
   if (unreadable.status === "fail") return outcome([unreadable], null, null);

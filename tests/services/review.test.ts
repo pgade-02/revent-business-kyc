@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openDatabase, type Database } from "@/db/client";
-import { insertDocument } from "@/db/documents";
+import { insertDocument, saveProcessingResult } from "@/db/documents";
 import { applications } from "@/db/schema";
 import { seedDatabase } from "@/db/seed/seed";
+import { checkDocReading } from "@/kyc/checks/doc-reading";
 import { labelledLinesLlm } from "@/providers/fakes/fake-llm-provider";
 import { createApplication } from "@/services/applications";
 import { listReviewQueue, loadReviewPage, recordReviewAction } from "@/services/review";
@@ -79,5 +80,32 @@ describe("document checklist", () => {
     expect((await loadReviewPage(db, row)).checklist).toEqual([
       expect.objectContaining({ slot: "passport", status: "skipped", results: [] }),
     ]);
+  });
+});
+
+describe("a reading step that failed", () => {
+  it("shows the document as Fail on the review page, with the reason, instead of Pass", async () => {
+    const applicationId = await newApplication(true);
+    const documentId = await insertDocument(db, {
+      applicationId,
+      slot: "bank_statement",
+      fileKey: "test/rows",
+      fileKind: "pdf",
+      sizeBytes: 1,
+      pageCount: 1,
+      sha256: `rows-${applicationId}`,
+    });
+    await saveProcessingResult(db, documentId, {
+      status: "needs_review",
+      fields: null,
+      results: [{ code: "DOC_UNREADABLE", status: "pass", detail: "ok" }, checkDocReading(String(documentId), "UNREADABLE_ROW")],
+    });
+    const [row] = await db.select().from(applications).where(eq(applications.id, applicationId));
+    if (!row) throw new Error("application missing");
+    const [statement] = (await loadReviewPage(db, row)).checklist;
+    expect(statement).toMatchObject({ slot: "bank_statement", status: "fail" });
+    expect(statement?.results.find((result) => result.code === "DOC_READING")?.detail).toBe(
+      "A statement row could not be read as money, so no rows were kept.",
+    );
   });
 });

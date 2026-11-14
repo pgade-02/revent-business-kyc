@@ -10,7 +10,16 @@ import { syntheticTexts } from "../../fixtures/synthetic-documents";
 // A "photo": its bytes only need to be unique, because the fake OCR looks up its text.
 function photo(id: number, size = { width: 1200, height: 800 }, sharpness = 2_000): AcceptedFile {
   const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, id]);
-  return { kind: "png", bytes, pageCount: 1, sha256: sha256Hex(bytes), perceptualHash: null, imageSize: size, sharpness, picturePages: [1] };
+  return {
+    kind: "png",
+    bytes,
+    pageCount: 1,
+    sha256: sha256Hex(bytes),
+    perceptualHash: null,
+    imageSize: size,
+    sharpness,
+    picturePages: [1],
+  };
 }
 
 function run(slot: CheckDocumentInput["slot"], text: string, overrides: Partial<CheckDocumentInput> = {}) {
@@ -35,7 +44,13 @@ describe("checkDocument", () => {
     const outcome = await run("passport", syntheticTexts.passport("2031-08-14"));
     expect(outcome.status).toBe("ready");
     expect(outcome.fields?.passportNumber?.value).toBe("X1234567");
-    expect(codes(outcome.results)).toEqual(["DOC_UNREADABLE:pass", "DOC_WRONG_TYPE:pass", "PASSPORT_MRZ:pass", "DOC_EXPIRED:pass", "DOC_EXPIRES_SOON:pass"]);
+    expect(codes(outcome.results)).toEqual([
+      "DOC_UNREADABLE:pass",
+      "DOC_WRONG_TYPE:pass",
+      "PASSPORT_MRZ:pass",
+      "DOC_EXPIRED:pass",
+      "DOC_EXPIRES_SOON:pass",
+    ]);
   });
 
   it("takes the passport's expiry from its machine-readable lines when the printed date was not read", async () => {
@@ -54,6 +69,13 @@ describe("checkDocument", () => {
   it("sends a statement to Needs review when its rows cannot be read, never half-counted", async () => {
     const outcome = await run("bank_statement", syntheticTexts.bankStatement.replace("| 20,000.00 |", "| twenty thousand |"));
     expect(outcome).toMatchObject({ status: "needs_review", problem: "UNREADABLE_ROW", transactions: [] });
+    // Recorded as a result of its own, so the reviewer page shows "Fail" with the reason.
+    expect(outcome.results.at(-1)).toMatchObject({
+      code: "DOC_READING",
+      status: "fail",
+      detail: "A statement row could not be read as money, so no rows were kept.",
+    });
+    expect(outcome.results.at(-1)?.customerMessageKey).toBeUndefined();
   });
 
   it("saves the passport's birth date and nationality from its machine-readable lines", async () => {
@@ -86,7 +108,11 @@ describe("checkDocument", () => {
 
   it("still tells the customer to replace a wrong document when the AI is unavailable", async () => {
     const outcome = await run("passport", syntheticTexts.foreignIdCard, {
-      readers: { pdfTextReader: { readPages: async () => [] }, ocr: createFakeOcrProvider(new Map([[photo(1).sha256, [syntheticTexts.foreignIdCard]]])), llm: createBrokenLlm("unavailable") },
+      readers: {
+        pdfTextReader: { readPages: async () => [] },
+        ocr: createFakeOcrProvider(new Map([[photo(1).sha256, [syntheticTexts.foreignIdCard]]])),
+        llm: createBrokenLlm("unavailable"),
+      },
     });
     expect(outcome).toMatchObject({ status: "needs_fix", problem: "LLM_UNAVAILABLE" });
   });

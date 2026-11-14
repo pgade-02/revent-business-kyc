@@ -72,12 +72,13 @@ describe("document upload and processing", () => {
     const { documentId, result } = await uploadAndProcess("bank_statement", await makeTextPdf([syntheticTexts.invoice]));
     expect(result).toEqual({ status: "needs_fix", customerMessageKeys: ["Checks.DOC_WRONG_TYPE.bank_statement"] });
     const saved = await db.select().from(checkResults).where(eq(checkResults.documentId, documentId));
-    // Statement rows need OCR, which this test app does not have, so no balance check runs.
+    // Statement rows need OCR, which this test app does not have: the failed step is recorded.
     expect(saved.map((row) => `${row.code}:${row.status}`)).toEqual([
       "FILE_DUPLICATE:pass",
       "FILE_REUSED:pass",
       "DOC_UNREADABLE:pass",
       "DOC_WRONG_TYPE:fail",
+      "DOC_READING:fail",
     ]);
   });
 

@@ -10,8 +10,28 @@ const FULL = 10_000;
 // Which checks feed which block (ARCHITECTURE §5). Nationality, employer and currency are
 // shown only and never scored (SECURITY §6, cross-checks spec §2).
 const BLOCK_CHECKS = {
-  documents: ["DOC_UNREADABLE", "DOC_WRONG_TYPE", "DOC_EXPIRED", "DOC_EXPIRES_SOON", "FILE_DUPLICATE", "FILE_REUSED", "PASSPORT_MRZ", "MRZ_CHECK_DIGITS", "EID_DATES"],
-  identity: ["NAME_COMPANY", "NAME_SIGNATORY", "LICENCE_NUMBER", "TRN_NUMBER", "ID_FORMAT", "EMIRATE_MATCH", "EID_SIDES_MATCH", "DOB_MATCH"],
+  documents: [
+    "DOC_READING",
+    "DOC_UNREADABLE",
+    "DOC_WRONG_TYPE",
+    "DOC_EXPIRED",
+    "DOC_EXPIRES_SOON",
+    "FILE_DUPLICATE",
+    "FILE_REUSED",
+    "PASSPORT_MRZ",
+    "MRZ_CHECK_DIGITS",
+    "EID_DATES",
+  ],
+  identity: [
+    "NAME_COMPANY",
+    "NAME_SIGNATORY",
+    "LICENCE_NUMBER",
+    "TRN_NUMBER",
+    "ID_FORMAT",
+    "EMIRATE_MATCH",
+    "EID_SIDES_MATCH",
+    "DOB_MATCH",
+  ],
   integrity: ["STMT_BALANCE", "STMT_COVERAGE", "STMT_CONTINUITY", "IBAN_CONSISTENT"],
 } as const;
 
@@ -40,7 +60,10 @@ function checkBlock(results: readonly CheckResult[], codes: readonly string[]): 
   });
   if (ran.length === 0) return { bps: FULL, confidenceBps: 0 };
   return {
-    bps: divideRoundHalfUp(ran.reduce((sum, points) => sum + points, 0), ran.length),
+    bps: divideRoundHalfUp(
+      ran.reduce((sum, points) => sum + points, 0),
+      ran.length,
+    ),
     confidenceBps: divideRoundHalfUp(ran.length * FULL, relevant.length),
   };
 }
@@ -61,8 +84,13 @@ function financialBlock(figures: MoneyFigures | null, settings: ScoringSettings)
 
 function hardStops(uploads: readonly UploadResults[], settings: ScoringSettings): string[] {
   const failed = (slot: DocumentSlot | null, code: string) =>
-    uploads.filter((upload) => (slot === null || upload.slot === slot) && upload.results.some((result) => result.code === code && result.status === "fail"));
-  const mismatchedStatements = uploads.filter((upload) => upload.results.some((result) => result.code === "STMT_BALANCE" && result.status === "warn")).length;
+    uploads.filter(
+      (upload) =>
+        (slot === null || upload.slot === slot) && upload.results.some((result) => result.code === code && result.status === "fail"),
+    );
+  const mismatchedStatements = uploads.filter((upload) =>
+    upload.results.some((result) => result.code === "STMT_BALANCE" && result.status === "warn"),
+  ).length;
   return [
     ...(failed("trade_licence", "DOC_EXPIRED").length > 0 ? ["Trade licence has expired."] : []),
     ...(mismatchedStatements > settings.balanceMismatchHardStopCount ? [`${mismatchedStatements} bank statements do not add up.`] : []),
@@ -77,7 +105,12 @@ function bandFor(score: number, stops: readonly string[], confidenceBps: number,
 }
 
 // Part 2, step 4 (ARCHITECTURE §5). Code only; weights and thresholds come from the settings.
-export function computeScore(input: { uploads: readonly UploadResults[]; crossChecks: readonly CheckResult[]; figures: MoneyFigures | null; settings: ScoringSettings }): Score {
+export function computeScore(input: {
+  uploads: readonly UploadResults[];
+  crossChecks: readonly CheckResult[];
+  figures: MoneyFigures | null;
+  settings: ScoringSettings;
+}): Score {
   const { settings } = input;
   const all = [...input.uploads.flatMap((upload) => upload.results), ...input.crossChecks];
   const blocks = {
@@ -86,7 +119,10 @@ export function computeScore(input: { uploads: readonly UploadResults[]; crossCh
     financial: financialBlock(input.figures, settings),
     integrity: checkBlock(all, BLOCK_CHECKS.integrity),
   };
-  const weighted = (Object.keys(blocks) as (keyof typeof blocks)[]).reduce((sum, name) => sum + settings.blockWeights[name] * blocks[name].bps, 0);
+  const weighted = (Object.keys(blocks) as (keyof typeof blocks)[]).reduce(
+    (sum, name) => sum + settings.blockWeights[name] * blocks[name].bps,
+    0,
+  );
   const score = divideRoundHalfUp(weighted, FULL);
   const confidenceBps = Math.min(...Object.values(blocks).map((block) => block.confidenceBps));
   const stops = hardStops(input.uploads, settings);
