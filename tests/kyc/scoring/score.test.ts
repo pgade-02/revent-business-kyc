@@ -27,9 +27,17 @@ const cleanUploads = [
   upload("bank_statement", check("DOC_UNREADABLE", "pass"), check("STMT_BALANCE", "pass")),
   upload("passport", check("PASSPORT_MRZ", "pass")),
 ];
-const cleanCrossChecks = ["NAME_COMPANY", "NAME_SIGNATORY", "LICENCE_NUMBER", "EMIRATE_MATCH", "EID_SIDES_MATCH", "DOB_MATCH", "STMT_COVERAGE", "STMT_CONTINUITY", "IBAN_CONSISTENT"].map((code) =>
-  check(code, "pass"),
-);
+const cleanCrossChecks = [
+  "NAME_COMPANY",
+  "NAME_SIGNATORY",
+  "LICENCE_NUMBER",
+  "EMIRATE_MATCH",
+  "EID_SIDES_MATCH",
+  "DOB_MATCH",
+  "STMT_COVERAGE",
+  "STMT_CONTINUITY",
+  "IBAN_CONSISTENT",
+].map((code) => check(code, "pass"));
 
 describe("computeScore", () => {
   it("gives a clean, healthy application 100 and Green", () => {
@@ -49,7 +57,13 @@ describe("computeScore", () => {
   });
 
   it("counts a warning as half and a fail as zero within a block", () => {
-    const crossChecks = cleanCrossChecks.map((result) => (result.code === "NAME_SIGNATORY" ? check("NAME_SIGNATORY", "warn") : result.code === "DOB_MATCH" ? check("DOB_MATCH", "fail") : result));
+    const crossChecks = cleanCrossChecks.map((result) =>
+      result.code === "NAME_SIGNATORY"
+        ? check("NAME_SIGNATORY", "warn")
+        : result.code === "DOB_MATCH"
+          ? check("DOB_MATCH", "fail")
+          : result,
+    );
     const result = computeScore({ uploads: cleanUploads, crossChecks, figures: healthy, settings });
     expect(result.blocks.identity.bps).toBe(7_500); // 4 pass, 1 warn, 1 fail of 6
   });
@@ -68,14 +82,48 @@ describe("computeScore", () => {
 
   it("makes the band Red whatever the score on a hard stop", () => {
     const expired = [upload("trade_licence", check("DOC_EXPIRED", "fail")), ...cleanUploads.slice(1)];
-    expect(computeScore({ uploads: expired, crossChecks: cleanCrossChecks, figures: healthy, settings })).toMatchObject({ band: "RED", hardStops: ["Trade licence has expired."] });
+    expect(computeScore({ uploads: expired, crossChecks: cleanCrossChecks, figures: healthy, settings })).toMatchObject({
+      band: "RED",
+      hardStops: ["Trade licence has expired."],
+    });
+  });
+
+  it("makes an expired passport or Emirates ID a hard stop, named once even when both card sides fail", () => {
+    const expiredCard = [
+      ...cleanUploads,
+      upload("emirates_id_front", check("DOC_UNREADABLE", "pass"), check("DOC_EXPIRED", "fail")),
+      upload("emirates_id_back", check("DOC_UNREADABLE", "pass"), check("DOC_EXPIRED", "fail")),
+    ];
+    expect(computeScore({ uploads: expiredCard, crossChecks: cleanCrossChecks, figures: healthy, settings })).toMatchObject({
+      band: "RED",
+      hardStops: ["Emirates ID has expired."],
+    });
+  });
+
+  it("scores documents one share each, so many passing checks cannot hide a failed document", () => {
+    const manyPasses = ["DOC_UNREADABLE", "DOC_WRONG_TYPE", "FILE_DUPLICATE", "FILE_REUSED", "EID_DATES"].map((code) =>
+      check(code, "pass"),
+    );
+    const uploads = [
+      upload("trade_licence", ...manyPasses),
+      upload("tax_certificate", ...manyPasses),
+      upload("bank_statement", ...manyPasses),
+      upload("passport", ...manyPasses, check("DOC_EXPIRED", "fail")),
+    ];
+    // 3 of 4 documents pass: 7500 bps, not the 95% an average of all 21 checks would give.
+    expect(computeScore({ uploads, crossChecks: cleanCrossChecks, figures: healthy, settings }).blocks.documents).toEqual({
+      bps: 7_500,
+      confidenceBps: 10_000,
+    });
   });
 
   it("stops on balance mismatches only above the setting (more than 1 statement)", () => {
     const one = [...cleanUploads, upload("bank_statement", check("STMT_BALANCE", "warn"))];
     const two = [...one, upload("bank_statement", check("STMT_BALANCE", "warn"))];
     expect(computeScore({ uploads: one, crossChecks: cleanCrossChecks, figures: healthy, settings }).hardStops).toEqual([]);
-    expect(computeScore({ uploads: two, crossChecks: cleanCrossChecks, figures: healthy, settings }).hardStops).toEqual(["2 bank statements do not add up."]);
+    expect(computeScore({ uploads: two, crossChecks: cleanCrossChecks, figures: healthy, settings }).hardStops).toEqual([
+      "2 bank statements do not add up.",
+    ]);
   });
 
   it("lowers Green to Amber when overall confidence is below the floor, e.g. no money figures", () => {
@@ -86,7 +134,10 @@ describe("computeScore", () => {
 
   it("drops to Amber on weak finances alone, and to Red when the checks fail too", () => {
     const weak = { ...healthy, leaseToIncomeBps: 4_000, daysBelowZero: 9, returnedItems: 4, debtToIncomeBps: 5_000 };
-    expect(computeScore({ uploads: cleanUploads, crossChecks: cleanCrossChecks, figures: weak, settings })).toMatchObject({ score: 50, band: "AMBER" });
+    expect(computeScore({ uploads: cleanUploads, crossChecks: cleanCrossChecks, figures: weak, settings })).toMatchObject({
+      score: 50,
+      band: "AMBER",
+    });
     const failing = cleanCrossChecks.map((result) => check(result.code, "fail"));
     expect(computeScore({ uploads: cleanUploads, crossChecks: failing, figures: weak, settings })).toMatchObject({ band: "RED" });
   });

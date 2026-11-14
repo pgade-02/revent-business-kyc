@@ -141,7 +141,7 @@ export function DocumentResults({ checklist }: { checklist: ReviewPageData["chec
                     <span className={cn("font-semibold", STATUS_STYLE[check.status])}>
                       {check.status === "pass" ? "✓" : STATUS_LABEL[check.status]}
                     </span>{" "}
-                    {checkLabel(check.code)}
+                    {checkLabel(check.code, check.status)}
                   </span>
                   {check.status !== "pass" && <span className="text-muted-foreground">{check.detail}</span>}
                 </li>

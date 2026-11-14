@@ -25,7 +25,7 @@ export function checkDocExpiresSoon(input: DocExpiresSoonInput): CheckResult {
     return { code: CODE, status: "skipped", detail: "The expiry date could not be read as a date.", evidence };
   }
   if (daysLeft < 0) {
-    return { code: CODE, status: "skipped", detail: "Already expired; see DOC_EXPIRED.", evidence };
+    return { code: CODE, status: "skipped", detail: "Already expired, so not checked.", evidence };
   }
 
   if (daysLeft <= expiresSoonDays) {

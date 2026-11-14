@@ -68,6 +68,39 @@ function checkBlock(results: readonly CheckResult[], codes: readonly string[]): 
   };
 }
 
+// One share per document, so a failed document is not hidden by its many passing checks
+// (decision log #66): any fail makes it zero, a warning half, otherwise full. A document whose
+// checks all could not run counts for nothing and lowers confidence instead.
+function documentsBlock(uploads: readonly UploadResults[]): Block {
+  const perDocument = uploads.flatMap((upload) => {
+    const ran = upload.results.filter(
+      (result) => (BLOCK_CHECKS.documents as readonly string[]).includes(result.code) && result.status !== "skipped",
+    );
+    if (ran.length === 0) return [];
+    const worst = ran.some((result) => result.status === "fail")
+      ? "fail"
+      : ran.some((result) => result.status === "warn")
+        ? "warn"
+        : "pass";
+    return [POINTS[worst] ?? 0];
+  });
+  if (perDocument.length === 0) return { bps: FULL, confidenceBps: 0 };
+  return {
+    bps: divideRoundHalfUp(
+      perDocument.reduce((sum, points) => sum + points, 0),
+      perDocument.length,
+    ),
+    confidenceBps: divideRoundHalfUp(perDocument.length * FULL, uploads.length),
+  };
+}
+
+const EXPIRED: Partial<Record<DocumentSlot, string>> = {
+  trade_licence: "Trade licence has expired.",
+  passport: "Passport has expired.",
+  emirates_id_front: "Emirates ID has expired.",
+  emirates_id_back: "Emirates ID has expired.",
+};
+
 // Each sub-score gives full, half or zero of its weight; a missing ratio gives zero.
 function financialBlock(figures: MoneyFigures | null, settings: ScoringSettings): Block {
   if (!figures) return { bps: 0, confidenceBps: 0 };
@@ -92,7 +125,8 @@ function hardStops(uploads: readonly UploadResults[], settings: ScoringSettings)
     upload.results.some((result) => result.code === "STMT_BALANCE" && result.status === "warn"),
   ).length;
   return [
-    ...(failed("trade_licence", "DOC_EXPIRED").length > 0 ? ["Trade licence has expired."] : []),
+    // An expired licence, passport or Emirates ID: the business or the signatory cannot be verified.
+    ...new Set(failed(null, "DOC_EXPIRED").flatMap((upload) => EXPIRED[upload.slot] ?? [])),
     ...(mismatchedStatements > settings.balanceMismatchHardStopCount ? [`${mismatchedStatements} bank statements do not add up.`] : []),
     ...(failed(null, "DOC_WRONG_TYPE").length > 0 ? ["A required document is still the wrong type."] : []),
   ];
@@ -114,7 +148,7 @@ export function computeScore(input: {
   const { settings } = input;
   const all = [...input.uploads.flatMap((upload) => upload.results), ...input.crossChecks];
   const blocks = {
-    documents: checkBlock(all, BLOCK_CHECKS.documents),
+    documents: documentsBlock(input.uploads),
     identity: checkBlock(all, BLOCK_CHECKS.identity),
     financial: financialBlock(input.figures, settings),
     integrity: checkBlock(all, BLOCK_CHECKS.integrity),
