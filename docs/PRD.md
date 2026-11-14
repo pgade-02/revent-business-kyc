@@ -105,15 +105,14 @@ The team UI is English-only in v1.
 
 1. **Header:** company name, licence number, licence activities, plan (term, monthly amount). For plans at or above the route threshold, a "Verification call" card.
 2. **Score and band:** 0–100 and Green / Amber / Red, plus "Recommend reject" for Red.
-3. **Insights** (written by the AI from the computed findings only, never from raw documents):
-   - **Profile:** 2–3 sentences on what the business is and how it is doing.
+3. **Documents:** each document with Pass, Warning, Fail or Could not check. A document with a problem opens to show what failed and why; a passing document opens on click to show every check it passed. Document checks are not repeated under Reasons.
+4. **Reasons:** every cross-document check that did not pass, each with a link to the document page it came from.
+5. **Patterns and things to check** (written by the AI from the computed findings only, never from raw documents; no company profile, decision log #61):
    - **Patterns:** up to 4 things worth noticing (for example "62% of income comes from one customer", "the balance fell 48% in September"). Each links to the document page it came from.
    - **Things to check:** up to 3 short pointers for the reviewer (for example "the Emirates ID employer differs from the licence; confirm the signatory still works there"). They are for the reviewer, not questions sent to the customer.
 
-   Every number in the insights is calculated by code first. The AI explains; it never scores, decides or recommends approve or reject. If the AI fails or returns invalid output, a code template writes a plain profile and lists the failed checks instead.
-4. **Reasons:** every check that did not pass, each with a link to the document page it came from.
-5. **Money figures:** months covered, average monthly income, lease as % of income, lowest balance, days below zero, returned cheques/debits, existing loan repayments per month (and as % of income). If no customer income is found, lease as % of income is shown as "—" with the reason "No customer income found". Two more figures feed the insights and are shown, but **not scored**: share of income from the largest payer, and the largest month-on-month balance drop.
-6. **Document checklist:** each document with pass / warning / fail.
+   Every number in the insights is calculated by code first. The AI explains; it never scores, decides or recommends approve or reject. If the AI fails or returns invalid output, a code template lists the failed checks instead.
+6. **Money figures:** months covered, average monthly income, lease as % of income, lowest balance, days below zero, returned cheques/debits, existing loan repayments per month (and as % of income). If no customer income is found, lease as % of income is shown as "—" with the reason "No customer income found". Two more figures feed the insights and are shown, but **not scored**: share of income from the largest payer, and the largest month-on-month balance drop.
 7. **Actions:** Approve · Request document · Reject. Always clicked by a person; the system never approves or rejects. Reject and overrides require a reason. These buttons **record the reviewer's decision** in the audit log. "Approve" does not create or send a quote; that happens outside this module.
 
 ## 7. Success criteria

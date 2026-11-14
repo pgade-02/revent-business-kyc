@@ -102,7 +102,7 @@ cross-document checks → statement transactions → money figures → score + b
 2. Bank statements: label the stored transactions (section 4), reconcile balances in code.
 3. Compute money figures (section 4).
 4. Score and band (section 5).
-5. Insights: the LLM receives **only computed findings** (score, band, check results, money figures, licence activities; never raw documents or page text) and fills a fixed schema: `profile` (2–3 sentences), `patterns` (≤ 4, each with the finding it rests on and its evidence), `thingsToCheck` (≤ 3). Code rejects the output if it has a number not in the findings or evidence that does not exist; then a code template writes a plain profile and lists the failed checks instead (PRD §6, decision log 50).
+5. Insights: the LLM receives **only computed findings** (score, band, check results, money figures, licence activities; never raw documents or page text) and fills a fixed schema: `patterns` (≤ 4, each with the finding it rests on and its evidence), `thingsToCheck` (≤ 3). Code rejects the output if it has a number not in the findings or evidence that does not exist; then a code template lists the failed checks instead (PRD §6, decision log 50, 61).
 6. Save the assessment. The team acts on the review page.
 
 **Request document** → the customer gets a message → re-uploads → Part 1 runs → resubmits → Part 2 runs again. Old assessments are kept.
@@ -247,7 +247,7 @@ The 0.9 field-confidence target in §8 is an evaluation target only, not runtime
     "existingDebtMonthly": 1125000,
     "debtToIncomeBps": 2500
   },
-  "insights": { "profile": "...", "patterns": [{ "text": "...", "evidence": { "documentId": "doc_4", "page": 2 } }], "thingsToCheck": ["..."], "source": "llm" },
+  "insights": { "patterns": [{ "text": "...", "evidence": { "documentId": "doc_4", "page": 2 } }], "thingsToCheck": ["..."], "source": "llm" },
   "createdAt": "2026-11-10T10:15:00Z"
 }
 ```
@@ -406,6 +406,7 @@ How to use: when an approach is tried, add a row. Status moves `trying` → `ado
 | 58 | 2026-11-14 | Insights: code builds the findings with every figure already formatted ("AED 185,000.00", "12.80%"); the AI must copy numbers as written. Faithfulness is checked by code: every number in the answer must equal a number in the findings (12.8 = 12.80), every pattern must name a real check code or figure, and every evidence link must be one the findings hold. Otherwise the code template is used (`source: "template"`): a plain profile plus hard stops and warned or failed checks. Insights use the configured `LlmProvider`; the head-to-head of two providers is still to run | Makes the §8 faithfulness target (100%) a hard rule at runtime, not only an evaluation | `tests/kyc/insights/insights.test.ts` | adopted |
 | 59 | 2026-11-14 | Review page at `/team` (English, outside `[locale]`): a queue of submitted applications and one page each, read only from the saved assessment. Only the reviewer role can open it, and only submitted applications (a draft looks like a missing one). Approve, Request document and Reject are recorded in `review_actions` with the assessment the reviewer saw (migration 0012); reject and document requests need a reason, checked on the page and by the server. Recording is all they do: no quote is created, no status changes, and the customer is not yet sent the document request. A document with no checks run shows as "Could not check". The team header has no theme toggle, because that component needs the customer translations | PRD §6; keeps every decision a person's, tied to what they saw | `tests/kyc/review/review-action.test.ts`, `tests/services/review.test.ts`, `tests/e2e/review.spec.ts` | adopted |
 | 60 | 2026-11-14 | A wrong document type no longer stops reading. `DOC_WRONG_TYPE` still fails and the customer still gets "Needs a fix", but the fields are read and the later checks run. Only a too-small or blurred photo stops before OCR | OCR has already run when the type is checked, so stopping saved one small AI call; a false alarm (OCR spacing out the Emirates ID code letters) turned every later check into "could not check" | `tests/kyc/documents/check-document.test.ts` | adopted |
+| 61 | 2026-11-14 | Refines row 50 after reviewer feedback: no company profile in the insights, only patterns and things to check. Review page order: score, documents (each opens to its checks; failing ones open by themselves), reasons (cross-document checks only), patterns and things to check, money figures, decision | Reviewers want findings to act on, and each document's own result next to the document instead of mixed into one list | `tests/kyc/insights/insights.test.ts`, `tests/e2e/review.spec.ts` | adopted |
 
 ## 10. Later (not v1)
 

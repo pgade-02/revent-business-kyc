@@ -48,7 +48,6 @@ function answering(json: unknown) {
   return { llm, sent };
 }
 const answer = (patternText: string, evidence: { documentId: string; page: number } | null = null, findingCode = "topPayerShare") => ({
-  profile: "An office equipment trader with steady income.",
   patterns: [{ text: patternText, findingCode, evidence }],
   thingsToCheck: [],
 });
@@ -62,6 +61,10 @@ describe("buildFindings", () => {
 });
 
 describe("writeInsights", () => {
+  it("never writes a company profile, only patterns and things to check", async () => {
+    expect(Object.keys(await writeInsights(findings, ai(labelledLinesLlm)))).toEqual(["patterns", "thingsToCheck", "source"]);
+  });
+
   it("keeps a faithful AI answer, with its evidence link", async () => {
     const insights = await writeInsights(findings, ai(labelledLinesLlm));
     expect(insights.source).toBe("llm");
@@ -94,9 +97,8 @@ describe("writeInsights", () => {
     expect((await writeInsights(findings, ai(llm))).source).toBe("template");
   });
 
-  it("falls back to a code template when the AI is unavailable: plain profile and the checks that did not pass", async () => {
+  it("falls back to a code template when the AI is unavailable: the checks that did not pass", async () => {
     expect(await writeInsights(findings, ai(createBrokenLlm("unavailable")))).toEqual({
-      profile: "Score 73 (AMBER). Over 6 months, average monthly income is AED 185,000.00 and the lease is 12.80% of it.",
       patterns: [],
       thingsToCheck: ['EID_EMPLOYER: Employer on the Emirates ID is "Other Contracting LLC", not this company.'],
       source: "template",

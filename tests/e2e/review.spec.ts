@@ -20,10 +20,12 @@ test("a reviewer opens a submitted application, sees the score card, and records
   await page.getByRole("link", { name: /Example Trading LLC/ }).first().click();
   await expect(page).toHaveURL(new RegExp(`/team/applications/${applicationId}$`));
 
-  for (const heading of ["Score", "Insights", "Reasons", "Money figures", "Documents", "Decision"]) {
+  for (const heading of ["Score", "Documents", "Reasons", "Patterns and things to check", "Money figures", "Decision"]) {
     await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
   }
   await expect(page.getByText(/Green|Amber|Red · Recommend reject/).first()).toBeVisible();
+  // Unprocessed test files: each document row opens to say no checks have run, never "Pass".
+  await expect(page.getByText("No checks have run on this file yet.").first()).toBeVisible();
 
   // Reject needs a reason: the page and the server both refuse an empty one.
   await page.getByRole("button", { name: "Reject", exact: true }).click();

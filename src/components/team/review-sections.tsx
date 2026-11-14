@@ -5,6 +5,7 @@ import type { MoneyFigures } from "@/kyc/statements/money-figures";
 import { formatAed } from "@/lib/format-money";
 import { cn } from "@/lib/utils";
 import type { ReviewPageData } from "@/services/review";
+import { checkLabel } from "./check-labels";
 
 type Assessment = NonNullable<ReviewPageData["assessment"]>;
 type SlotsById = ReadonlyMap<string, DocumentSlot>;
@@ -40,11 +41,12 @@ export function EvidenceLink({ evidence, slots }: { evidence: CheckResult["evide
   );
 }
 
-export function InsightsCard({ insights, slots }: { insights: Assessment["insights"]; slots: SlotsById }) {
-  if (!insights) return <p className="text-muted-foreground">No insights were written.</p>;
+export function PatternsCard({ insights, slots }: { insights: Assessment["insights"]; slots: SlotsById }) {
+  if (!insights || (insights.patterns.length === 0 && insights.thingsToCheck.length === 0)) {
+    return <p className="text-sm text-muted-foreground">Nothing further to point out.</p>;
+  }
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-4">
-      <p>{insights.profile}</p>
       {insights.patterns.length > 0 && (
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">Patterns</h3>
@@ -122,15 +124,40 @@ export function FiguresTable({ figures, problem }: { figures: MoneyFigures | nul
   );
 }
 
-export function DocumentChecklist({ checklist }: { checklist: ReviewPageData["checklist"] }) {
+// One row per document with its overall result. A document with a problem opens to show
+// what failed; a passing one opens on click to show every check it passed.
+export function DocumentResults({ checklist }: { checklist: ReviewPageData["checklist"] }) {
   return (
     <ul className="divide-y rounded-xl border">
       {checklist.map((document) => (
-        <li key={document.documentId} className="flex items-center justify-between p-3 text-sm">
-          <span>{SLOT_LABEL[document.slot]}</span>
-          <span className={cn("font-semibold", STATUS_STYLE[document.status])}>{STATUS_LABEL[document.status]}</span>
+        <li key={document.documentId}>
+          <details open={document.status !== "pass"} className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between p-3 text-sm hover:bg-accent">
+              <span className="font-medium">{SLOT_LABEL[document.slot]}</span>
+              <span className={cn("font-semibold underline-offset-4 group-open:underline", STATUS_STYLE[document.status])}>
+                {STATUS_LABEL[document.status]}
+              </span>
+            </summary>
+            <ul className="flex flex-col gap-2 px-3 pb-3 text-sm">
+              {document.results.length === 0 && <li className="text-muted-foreground">No checks have run on this file yet.</li>}
+              {sortedForReview(document.results).map((check) => (
+                <li key={check.code} className="flex flex-col">
+                  <span>
+                    <span className={cn("font-semibold", STATUS_STYLE[check.status])}>
+                      {check.status === "pass" ? "✓" : STATUS_LABEL[check.status]}
+                    </span>{" "}
+                    {checkLabel(check.code)}
+                  </span>
+                  {check.status !== "pass" && <span className="text-muted-foreground">{check.detail}</span>}
+                </li>
+              ))}
+            </ul>
+          </details>
         </li>
       ))}
     </ul>
   );
 }
+
+const ORDER: Record<CheckResult["status"], number> = { fail: 0, warn: 1, skipped: 2, pass: 3 };
+const sortedForReview = (results: readonly CheckResult[]) => [...results].sort((a, b) => ORDER[a.status] - ORDER[b.status]);

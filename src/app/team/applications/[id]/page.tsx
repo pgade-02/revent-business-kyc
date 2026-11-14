@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { findReviewerApplication, parseId } from "@/auth/access";
 import { BandBadge } from "@/components/team/band-badge";
 import { ReviewActions } from "@/components/team/review-actions";
-import { DocumentChecklist, FiguresTable, InsightsCard, ReasonsList, Section } from "@/components/team/review-sections";
+import { DocumentResults, FiguresTable, PatternsCard, ReasonsList, Section } from "@/components/team/review-sections";
 import { SignInAsReviewer } from "@/components/team/sign-in-as-reviewer";
 import { getAppDatabase } from "@/db/app-db";
 import { formatAed } from "@/lib/format-money";
@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 
 const ACTION_LABEL = { approve: "Approved", request_document: "Requested a document", reject: "Rejected" } as const;
 
-// One page per application (PRD §6): header, score and band, insights, reasons, money
-// figures, document checklist, and the reviewer's actions.
+// One page per application (PRD §6, reviewer order): score, each document's result, reasons
+// across documents, patterns and things to check, money figures, and the decision.
 export default async function ReviewApplicationPage({ params }: PageProps<"/team/applications/[id]">) {
   const id = parseId((await params).id);
   if (id === null) notFound();
@@ -24,9 +24,8 @@ export default async function ReviewApplicationPage({ params }: PageProps<"/team
   const data = await loadReviewPage(db, access.value);
   const { application, company, assessment } = data;
   const slots = new Map(data.checklist.map((document) => [document.documentId, document.slot]));
-  const notPassed = [...data.checklist.flatMap((document) => document.results), ...(assessment?.checks ?? [])].filter(
-    (check) => check.status !== "pass",
-  );
+  // Document checks are shown under each document; reasons are what compares documents.
+  const notPassed = (assessment?.checks ?? []).filter((check) => check.status !== "pass");
 
   return (
     <>
@@ -64,21 +63,20 @@ export default async function ReviewApplicationPage({ params }: PageProps<"/team
               <p className="text-muted-foreground">Not scored.</p>
             )}
           </Section>
-          <Section title="Insights">
-            <InsightsCard insights={assessment.insights} slots={slots} />
+          <Section title="Documents">
+            <DocumentResults checklist={data.checklist} />
           </Section>
           <Section title="Reasons">
             <ReasonsList checks={notPassed} slots={slots} />
+          </Section>
+          <Section title="Patterns and things to check">
+            <PatternsCard insights={assessment.insights} slots={slots} />
           </Section>
           <Section title="Money figures">
             <FiguresTable figures={assessment.figures} problem={assessment.figuresProblem} />
           </Section>
         </>
       )}
-
-      <Section title="Documents">
-        <DocumentChecklist checklist={data.checklist} />
-      </Section>
 
       <Section title="Decision">
         <ReviewActions applicationId={application.id} />
