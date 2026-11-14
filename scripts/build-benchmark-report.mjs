@@ -1,12 +1,14 @@
 // Builds docs/benchmarks/ai-provider-benchmark.docx from benchmark result files.
-// Usage: node scripts/build-benchmark-report.cjs <documents.json> <insights-before.json> <insights-after.json> <out.docx>
+// Usage: node scripts/build-benchmark-report.mjs <documents.json> <insights-before.json> <insights-after.json> <out.docx>
 // "before" is the first insights run (free-text finding labels), "after" the run with labels
 // limited to real finding names (decision log 62). Update the dated text below on each new run.
-const fs = require("fs");
-const {
+// Afterwards, remove the archive's folder entries (Word can refuse them when the file is
+// opened through a cloud co-editing service): see the v1.0 commit for the small script used.
+import fs from "node:fs";
+import {
   AlignmentType, BorderStyle, Document, Footer, HeadingLevel, LevelFormat, Packer, PageNumber, Paragraph,
   ShadingType, Table, TableCell, TableRow, TextRun, WidthType,
-} = require("docx");
+} from "docx";
 
 const [documentsFile, beforeFile, insightsFile, outFile] = process.argv.slice(2);
 const docs = JSON.parse(fs.readFileSync(documentsFile, "utf8"));
@@ -14,7 +16,6 @@ const runsBefore = JSON.parse(fs.readFileSync(beforeFile, "utf8"));
 const runs = JSON.parse(fs.readFileSync(insightsFile, "utf8"));
 
 const FONT = "Arial";
-const PAGE_WIDTH = 9026; // A4 width minus 1" margins, in DXA
 const median = (v) => { const s = [...v].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : null; };
 const sec = (ms) => (ms === null || ms === undefined ? "—" : `${(ms / 1000).toFixed(1)} s`);
 const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : "—");
@@ -220,4 +221,5 @@ const doc = new Document({
     children,
   }],
 });
-Packer.toBuffer(doc).then((buf) => { fs.writeFileSync(outFile, buf); console.log("written", outFile); });
+fs.writeFileSync(outFile, await Packer.toBuffer(doc));
+console.log("written", outFile);
