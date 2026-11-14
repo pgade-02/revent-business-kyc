@@ -69,11 +69,6 @@ export function PatternsCard({ insights, slots }: { insights: Assessment["insigh
           </ul>
         </div>
       )}
-      <p className="text-xs text-muted-foreground">
-        {insights.source === "llm"
-          ? "Written by AI from the computed findings only."
-          : "Written by a code template (the AI answer was unavailable or not faithful)."}
-      </p>
     </div>
   );
 }
