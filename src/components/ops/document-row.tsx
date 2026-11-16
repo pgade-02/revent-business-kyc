@@ -24,7 +24,9 @@ export function DocumentRow({ document, canReview }: { document: OpsDocument; ca
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2">
           <span className="font-medium">{SLOT_LABEL[document.slot]}</span>
-          <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", STATE_STYLE[document.reviewState])}>{REVIEW_STATE_LABEL[document.reviewState]}</span>
+          {document.reviewState !== "to_review" && (
+            <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", STATE_STYLE[document.reviewState])}>{REVIEW_STATE_LABEL[document.reviewState]}</span>
+          )}
         </span>
         <span className="flex flex-wrap items-center gap-3 text-sm">
           <a href={file} target="_blank" rel="noopener" className="underline underline-offset-4">

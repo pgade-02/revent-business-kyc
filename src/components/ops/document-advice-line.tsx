@@ -40,7 +40,8 @@ function CheckList({ checks, words }: { checks: readonly CheckResult[]; words: (
 // Shows a document's result (click to see every check), the reasons when it is not a pass, and things to check across documents.
 export function DocumentAdviceLine({ advice, checks, thingsToCheck }: { advice: DocumentAdvice; checks: readonly CheckResult[]; thingsToCheck: readonly CheckResult[] }) {
   const { label, style, Icon } = VERDICT[advice.verdict];
-  const listed = checks.filter((check) => check.status !== "pass" || !SHOWN_ONLY_WHEN_FOUND.includes(check.code));
+  // Checks that did not apply (e.g. "expiring soon" on an expired card) are left out; their reason shows below when it matters.
+  const listed = checks.filter((check) => check.status !== "skipped" && (check.status !== "pass" || !SHOWN_ONLY_WHEN_FOUND.includes(check.code)));
   return (
     <div className="flex flex-col gap-2 text-sm">
       <details className="group">

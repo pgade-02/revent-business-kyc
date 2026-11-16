@@ -48,7 +48,7 @@ test("an item drafts one message in the chosen language", async ({ page }) => {
   const message = page.getByLabel("Message, item 1", { exact: true });
   await expect(message).toHaveValue("Your passport has expired. Please upload a valid, current copy.");
 
-  await page.getByLabel("Message language").selectOption("ar");
+  await page.getByLabel("Language, item 1").selectOption("ar");
   await expect(message).toHaveValue("");
   await page.getByRole("button", { name: "Draft message" }).click();
   await expect(message).not.toHaveValue("", { timeout: 90_000 });

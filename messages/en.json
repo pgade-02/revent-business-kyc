@@ -40,8 +40,8 @@
     "continueToVerification": "Continue to business verification"
   },
   "Checks": {
-    "MRZ_CHECK_DIGITS": "We couldn’t confirm the code lines on the back of your Emirates ID. Please upload a clear photo of your original card, taken straight on.",
-    "PASSPORT_MRZ": "We couldn’t confirm the code lines at the bottom of your passport. Please upload a clear photo of the photo page of your original passport.",
+    "MRZ_CHECK_DIGITS": "The code lines at the bottom of the back of your Emirates ID don’t match the details on the card. Please upload a photo of your original Emirates ID.",
+    "PASSPORT_MRZ": "The code lines at the bottom of your passport’s photo page don’t match the details on the passport. Please upload a photo of your original passport.",
     "DOC_EXPIRED": "This document has expired. Please upload a valid one.",
     "FILE_DUPLICATE": "You’ve already uploaded this file. Please upload the right document.",
     "DOC_UNREADABLE": "Photo not clear. Please upload a sharper, high-resolution photo under {maxMb} MB.",

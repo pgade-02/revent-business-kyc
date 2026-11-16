@@ -43,7 +43,7 @@ test("a reviewer cannot make a move the rules refuse", async ({ page }) => {
   expect(refused.status()).toBe(409);
 });
 
-test("a reviewer asks for more information with two items and the application waits on the customer", async ({ page }) => {
+test("a reviewer sends each item on its own and the application waits on the customer", async ({ page }) => {
   const applicationId = await submitCompleteApplication(page);
   await page.request.post("/api/session", { data: { role: "reviewer" } });
   await page.goto(`/ops/applications/${applicationId}`);
@@ -55,6 +55,9 @@ test("a reviewer asks for more information with two items and the application wa
   await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("What to ask for, item 2").selectOption("company_details");
   await page.getByLabel("Reason, item 2").selectOption("details_do_not_match");
+  await page.getByRole("button", { name: "Send request" }).first().click();
+  await expect(page.getByText("Passport: Expired · Please upload the renewed passport")).toBeVisible();
+  await expect(page.getByLabel("What to ask for, item 1")).toHaveValue("company_details");
   await page.getByRole("button", { name: "Send request" }).click();
 
   await expect(page.getByText("Passport: Expired · Please upload the renewed passport")).toBeVisible();
