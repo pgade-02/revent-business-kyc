@@ -9,6 +9,7 @@ test("a reviewer takes ownership, approves a document, changes status and opens 
   await expect(page.getByRole("heading", { name: /^RB-\d{2}-/ })).toBeVisible();
   await expect(page.getByText("SHA-256", { exact: false }).first()).toBeVisible();
   await expect(page.getByText("Needs a look").first()).toBeVisible();
+  await page.getByText("Needs a look").first().click();
   await expect(page.getByText("This file has not been read yet.").first()).toBeVisible();
 
   await page.getByLabel("Owner").selectOption({ label: "Demo Reviewer" });
@@ -50,7 +51,7 @@ test("a reviewer asks for more information with two items and the application wa
 
   await page.getByLabel("What to ask for, item 1").selectOption("passport");
   await page.getByLabel("Reason, item 1").selectOption("expired");
-  await page.getByLabel("Note, item 1").fill("Please upload the renewed passport");
+  await page.getByLabel("Message, item 1", { exact: true }).fill("Please upload the renewed passport");
   await page.getByRole("button", { name: "Add item" }).click();
   await page.getByLabel("What to ask for, item 2").selectOption("company_details");
   await page.getByLabel("Reason, item 2").selectOption("details_do_not_match");
@@ -92,9 +93,9 @@ test("the risk card shows the score, its band, the checks across documents and t
   await page.request.post("/api/session", { data: { role: "reviewer" } });
   await page.goto(`/ops/applications/${applicationId}`);
 
-  await expect(page.getByRole("heading", { name: "Risk", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overall risk", exact: true })).toBeVisible();
   await expect(page.getByText(/Green|Amber|Red · Recommend reject/).first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Checks across documents" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Other checks across documents" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Bank statement summary" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open score card" })).toHaveCount(0);
 });

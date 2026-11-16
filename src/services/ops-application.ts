@@ -7,6 +7,7 @@ import { listInfoRequests } from "@/db/info-requests";
 import { loadLatestScoringSettings } from "@/db/scoring-settings";
 import { applications, documents, planItems, products, services, users } from "@/db/schema";
 import { listTimeline } from "@/db/timeline";
+import type { CheckResult } from "@/kyc/checks/check-result";
 import { DOCUMENT_SLOTS } from "@/kyc/documents/slots";
 import { extractedFieldsSchema } from "@/kyc/extraction/extract-fields";
 import { documentAdvice } from "@/ops/document-advice";
@@ -46,11 +47,12 @@ const fieldsOf = (row: DocumentWithFields) => {
   return parsed.success ? parsed.data : null;
 };
 
-// Adds each document's result, from its latest checks.
-function withAdvice(rows: DocumentWithFields[], uploads: Awaited<ReturnType<typeof listLatestUploadResults>>) {
+// Adds each document's result and checks, and the cross-document checks that point at it.
+function withAdvice(rows: DocumentWithFields[], uploads: Awaited<ReturnType<typeof listLatestUploadResults>>, crossChecks: readonly CheckResult[]) {
   return rows.map((row) => {
-    const results = uploads.find((upload) => upload.documentId === String(row.id))?.results ?? [];
-    return { ...row, advice: documentAdvice(results) };
+    const checks = uploads.find((upload) => upload.documentId === String(row.id))?.results ?? [];
+    const thingsToCheck = crossChecks.filter((check) => check.status !== "pass" && check.evidence?.documentId === String(row.id));
+    return { ...row, advice: documentAdvice(checks), checks, thingsToCheck };
   });
 }
 
@@ -104,7 +106,8 @@ export async function loadOpsApplication(db: Database, applicationId: number) {
     reviewers,
     contact: contact ?? null,
     planLines,
-    documents: withAdvice(documentRows, uploads),
+    documents: withAdvice(documentRows, uploads, assessment?.checks ?? []),
+    otherChecks: (assessment?.checks ?? []).filter((check) => !documentRows.some((row) => String(row.id) === check.evidence?.documentId)),
     comparisons,
     suggestedRequest: suggestRequestItems({
       documents: documentRows.map((row) => ({ slot: row.slot, reviewState: row.reviewState, results: resultsOf(row.id) })),

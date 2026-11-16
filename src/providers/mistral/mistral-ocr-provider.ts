@@ -26,7 +26,9 @@ export function createMistralOcrProvider(client: MistralClient, options: { model
         ...(kind === "pdf" && pages ? { pages: pages.map((page) => page - 1) } : {}),
       };
 
-      const result = await postToMistral(client, "/v1/ocr", body, options.timeoutMs);
+      // One retry: a single slow or failed answer from the service should not fail the document.
+      const first = await postToMistral(client, "/v1/ocr", body, options.timeoutMs);
+      const result = first.ok ? first : await postToMistral(client, "/v1/ocr", body, options.timeoutMs);
       if (!result.ok) return { ok: false, reason: result.reason };
       const answer = ocrAnswer.safeParse(result.json);
       if (!answer.success) return { ok: false, reason: "ERROR" };

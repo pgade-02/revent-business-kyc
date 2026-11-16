@@ -45,6 +45,7 @@ export default async function OpsApplicationPage({
     requests,
     timeline,
     assessment,
+    otherChecks,
   } = data;
   const reviewerNames = new Map(
     reviewers.map((reviewer) => [reviewer.id, reviewer.name]),
@@ -96,11 +97,6 @@ export default async function OpsApplicationPage({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex flex-col gap-6">
           <section className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold">Risk</h2>
-            <RiskCard assessment={assessment} slots={slotsById} />
-          </section>
-
-          <section className="flex flex-col gap-3">
             <h2 className="text-lg font-semibold">Documents</h2>
             {documents.length === 0 ? (
               <p className="text-muted-foreground">No documents uploaded.</p>
@@ -133,6 +129,11 @@ export default async function OpsApplicationPage({
             <ContactCard contact={contact} />
             <PlanCard application={application} lines={planLines} />
           </div>
+
+          <section className="flex flex-col gap-3">
+            <h2 className="text-lg font-semibold">Overall risk</h2>
+            <RiskCard assessment={assessment} otherChecks={otherChecks} slots={slotsById} />
+          </section>
         </div>
 
         <aside className="flex flex-col gap-3">

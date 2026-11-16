@@ -36,17 +36,25 @@ test("the customer sees only what was asked, answers it, and the application ret
   await expect(page.getByText(/answered /)).toBeVisible();
 });
 
-test("the reviewer drafts Arabic for a note before sending", async ({ page }) => {
+test("an item drafts one message in the chosen language", async ({ page }) => {
   test.setTimeout(120_000);
   const applicationId = await submitCompleteApplication(page);
   await signInAs(page, "reviewer");
   await page.goto(`/ops/applications/${applicationId}`);
 
-  await page.getByLabel("Note, item 1").fill("Please upload the renewed passport.");
-  await page.getByRole("button", { name: "Draft Arabic" }).click();
-  const arabicNote = page.getByLabel("Arabic note, item 1");
-  await expect(arabicNote).not.toHaveValue("", { timeout: 90_000 });
-  await arabicNote.fill("يرجى تحميل الجواز المجدد.");
+  await page.getByLabel("What to ask for, item 1").selectOption("passport");
+  await page.getByLabel("Reason, item 1").selectOption("expired");
+  await page.getByRole("button", { name: "Draft message" }).click();
+  const message = page.getByLabel("Message, item 1", { exact: true });
+  await expect(message).toHaveValue("Your passport has expired. Please upload a valid, current copy.");
+
+  await page.getByLabel("Message language").selectOption("ar");
+  await expect(message).toHaveValue("");
+  await page.getByRole("button", { name: "Draft message" }).click();
+  await expect(message).not.toHaveValue("", { timeout: 90_000 });
+  await expect(message).toHaveAttribute("dir", "rtl");
+  await message.fill("يرجى تحميل جواز سفر ساري المفعول.");
   await page.getByRole("button", { name: "Send request" }).click();
-  await expect(page.getByText("يرجى تحميل الجواز المجدد.")).toBeVisible();
+  await expect(page.getByText("يرجى تحميل جواز سفر ساري المفعول.")).toBeVisible();
+  await expect(page.getByText("Your passport has expired.")).toHaveCount(0);
 });

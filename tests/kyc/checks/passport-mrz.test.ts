@@ -54,7 +54,7 @@ describe("PASSPORT_MRZ", () => {
     const result = checkPassportMrz("doc_test", found(ocrText.replace(line2, edited)));
     expect(result.status).toBe("fail");
     expect(result.customerMessageKey).toBe("Checks.PASSPORT_MRZ");
-    expect(result.detail).toBe("Check digit wrong for: date of birth, whole line.");
+    expect(result.detail).toBe("Check digit wrong for: date of birth, whole line. Either the lines were misread or the passport was edited; compare them with the photo.");
   });
 
   it("names the passport number when a character of it is changed", () => {

@@ -41,7 +41,7 @@ export function DocumentRow({ document, canReview }: { document: OpsDocument; ca
         {timeText(document.uploadedAt)}
         {document.reviewedByName && document.reviewedAt ? ` · ${REVIEW_STATE_LABEL[document.reviewState].toLowerCase()} by ${document.reviewedByName} on ${timeText(document.reviewedAt)}` : ""}
       </p>
-      <DocumentAdviceLine advice={document.advice} />
+      <DocumentAdviceLine advice={document.advice} checks={document.checks} thingsToCheck={document.thingsToCheck} />
       <p className="break-all font-mono text-xs text-muted-foreground">SHA-256 {document.sha256}</p>
     </li>
   );

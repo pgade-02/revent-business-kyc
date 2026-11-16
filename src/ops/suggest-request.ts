@@ -8,8 +8,6 @@ import type { TypedComparisons } from "./typed-vs-document";
 const REASON_FOR_CHECK: Readonly<Record<string, RequestReason>> = {
   DOC_EXPIRED: "expired",
   DOC_UNREADABLE: "not_clear",
-  MRZ_CHECK_DIGITS: "not_clear",
-  PASSPORT_MRZ: "not_clear",
   DOC_WRONG_TYPE: "wrong_document",
   FILE_DUPLICATE: "wrong_document",
 };

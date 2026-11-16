@@ -15,7 +15,7 @@ const assessment = (hardStops: string[]): SavedAssessment => ({
   insights: null,
   score: { score: 90, band: hardStops.length > 0 ? "RED" : "GREEN", confidenceBps: 10_000, hardStops, blocks: { documents: block, identity: block, financial: block, integrity: block } },
 });
-const render = (hardStops: string[]) => renderToStaticMarkup(createElement(RiskCard, { assessment: assessment(hardStops), slots: new Map() }));
+const render = (hardStops: string[]) => renderToStaticMarkup(createElement(RiskCard, { assessment: assessment(hardStops), otherChecks: [], slots: new Map() }));
 
 describe("RiskCard", () => {
   it("shows the score and band when nothing stops the application", () => {

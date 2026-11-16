@@ -53,8 +53,16 @@ function Stopped({ stops }: { stops: readonly string[] }) {
   );
 }
 
-// Shows the score with its band (or what stops the application), the checks across documents, patterns and statement figures.
-export function RiskCard({ assessment, slots }: { assessment: SavedAssessment | null; slots: ReadonlyMap<string, DocumentSlot> }) {
+// Shows the score with its band (or what stops the application), checks not tied to one document, patterns and statement figures.
+export function RiskCard({
+  assessment,
+  otherChecks,
+  slots,
+}: {
+  assessment: SavedAssessment | null;
+  otherChecks: readonly CheckResult[];
+  slots: ReadonlyMap<string, DocumentSlot>;
+}) {
   if (!assessment) return <p className="text-sm text-muted-foreground">No risk assessment yet. It runs when the application is submitted.</p>;
   const { score } = assessment;
   return (
@@ -71,8 +79,8 @@ export function RiskCard({ assessment, slots }: { assessment: SavedAssessment | 
       )}
 
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold">Checks across documents</h3>
-        <CrossCheckList checks={assessment.checks} />
+        <h3 className="text-sm font-semibold">Other checks across documents</h3>
+        <CrossCheckList checks={otherChecks} />
       </div>
 
       <PatternsCard insights={assessment.insights} slots={slots} />

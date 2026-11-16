@@ -6,6 +6,7 @@ const card = (id: number, overrides: Partial<BoardCard>): BoardCard => ({
   reference: `RB-26-AAAAA${id}`,
   stage: "submitted",
   stageChangedAt: "2026-11-10T08:00:00.000Z",
+  submittedAt: "2026-11-10T08:00:00.000Z",
   companyName: null,
   route: "verification_call",
   term: 36,
@@ -18,16 +19,16 @@ const card = (id: number, overrides: Partial<BoardCard>): BoardCard => ({
 });
 
 const cards = [
-  card(1, { stage: "in_review", ownerId: "me", stageChangedAt: "2026-11-12T08:00:00.000Z" }),
-  card(2, { stage: "waiting_on_customer", route: "self_disclosure", stageChangedAt: "2026-11-09T08:00:00.000Z" }),
+  card(1, { stage: "in_review", ownerId: "me", submittedAt: "2026-11-12T08:00:00.000Z" }),
+  card(2, { stage: "waiting_on_customer", route: "self_disclosure", submittedAt: "2026-11-09T08:00:00.000Z" }),
   card(3, { stage: "approved" }),
-  card(4, { stage: "submitted", ownerId: "someone-else", stageChangedAt: "2026-11-11T08:00:00.000Z" }),
+  card(4, { stage: "submitted", ownerId: "someone-else", submittedAt: "2026-11-11T08:00:00.000Z" }),
 ];
 const ids = (filter: Record<string, string>) => filterBoard(cards, boardFilterSchema.parse(filter), "me").map((found) => found.id);
 
 describe("filterBoard", () => {
-  it("shows open applications by default, longest waiting first", () => {
-    expect(ids({})).toEqual([2, 4, 1]);
+  it("shows open applications by default, newest first", () => {
+    expect(ids({})).toEqual([1, 4, 2]);
   });
 
   it("shows only closed applications on the Closed tab", () => {

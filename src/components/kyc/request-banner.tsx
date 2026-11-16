@@ -32,7 +32,7 @@ export async function RequestBanner({ items }: { items: (RequestItem & { id: num
       <p className="text-muted-foreground">{t("intro")}</p>
       <ul className="divide-y rounded-xl border">
         {items.map((item) => {
-          const note = locale === "ar" ? (item.noteAr ?? item.note) : item.note;
+          const note = locale === "ar" ? (item.noteAr ?? item.note) : (item.note ?? item.noteAr);
           return (
             <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
               <span className="flex flex-col gap-1">

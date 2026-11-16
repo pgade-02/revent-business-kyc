@@ -26,6 +26,7 @@ export async function listBoardCards(db: Database): Promise<BoardCard[]> {
       reference: applications.reference,
       stage: applications.status,
       stageChangedAt: applications.stageChangedAt,
+      submittedAt: applications.submittedAt,
       companyName: applications.companyName,
       route: applications.route,
       term: applications.term,

@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openDatabase, type Database } from "@/db/client";
+import { insertAssessment } from "@/db/assessments";
 import { insertDocument, saveProcessingResult } from "@/db/documents";
 import { applications } from "@/db/schema";
 import { seedDatabase } from "@/db/seed/seed";
@@ -114,6 +115,22 @@ describe("loadOpsApplication", () => {
       { subject: "passport", reason: "expired" },
       { subject: "company_details", reason: "details_do_not_match" },
     ]);
+  });
+
+  it("puts each cross-document check under the document it points at, and keeps the rest for the risk card", async () => {
+    const created = await createApplication(db, "seed-customer", plan);
+    if (!created.ok) throw new Error(created.reason);
+    const id = created.applicationId;
+    await db.update(applications).set({ status: "submitted", submittedAt: now }).where(eq(applications.id, id));
+    const licence = await document(id, "trade_licence", "thg1");
+    const onLicence = { code: "EMIRATE_MATCH", status: "warn" as const, detail: "Emirate differs.", evidence: { documentId: String(licence), page: 1 } };
+    const passed = { code: "NAME_COMPANY", status: "pass" as const, detail: "Names agree.", evidence: { documentId: String(licence), page: 1 } };
+    const general = { code: "STMT_COVERAGE", status: "warn" as const, detail: "A month is missing." };
+    await insertAssessment(db, { applicationId: id, scoringSettingsVersion: 1, checks: [onLicence, passed, general], figures: null, figuresProblem: null, score: null, insights: null });
+
+    const data = await loadOpsApplication(db, id);
+    expect(data?.documents[0]?.thingsToCheck).toEqual([onLicence]);
+    expect(data?.otherChecks).toEqual([general]);
   });
 
   it("returns nothing for an unknown application", async () => {

@@ -15,7 +15,7 @@ export function checkMrzCheckDigits(documentId: string, found: { mrz: EmiratesId
   return {
     code: CODE,
     status: "fail",
-    detail: `Check digit wrong for: ${failures.join(", ")}.`,
+    detail: `Check digit wrong for: ${failures.join(", ")}. Either the lines were misread or the card was edited; compare them with the photo.`,
     evidence,
     customerMessageKey: "Checks.MRZ_CHECK_DIGITS",
   };

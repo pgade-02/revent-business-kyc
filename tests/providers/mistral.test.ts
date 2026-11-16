@@ -53,6 +53,15 @@ describe("Mistral OCR provider", () => {
     expect(await createMistralOcrProvider(client(fakeFetch({ json: { nope: true } }).fetchImpl), options).read(request)).toEqual({ ok: false, reason: "ERROR" });
     expect(await createMistralOcrProvider(client(fakeFetch({ hang: true }).fetchImpl), options).read(request)).toEqual({ ok: false, reason: "TIMEOUT" });
   });
+
+  it("tries once more when the first answer fails, and reads the second", async () => {
+    const answers = [new Response("{}", { status: 503 }), new Response(JSON.stringify({ pages: [{ index: 0, markdown: "TRN" }] }))];
+    let calls = 0;
+    const fetchImpl: typeof fetch = async () => answers[calls++] ?? new Response("{}", { status: 500 });
+    const result = await createMistralOcrProvider(client(fetchImpl), { model: "m", timeoutMs: 1_000 }).read({ bytes: new Uint8Array([1]), kind: "png" });
+    expect(result).toEqual({ ok: true, pages: [{ page: 1, text: "TRN" }] });
+    expect(calls).toBe(2);
+  });
 });
 
 describe("Mistral LLM provider", () => {

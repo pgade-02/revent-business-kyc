@@ -6,6 +6,7 @@ export type BoardCard = {
   reference: string | null;
   stage: ApplicationStage;
   stageChangedAt: string | null;
+  submittedAt: string | null;
   companyName: string | null;
   route: "self_disclosure" | "verification_call";
   term: number;
@@ -33,7 +34,7 @@ function matchesOwner(card: BoardCard, owner: BoardFilter["owner"], viewerId: st
   return true;
 }
 
-// Keeps the cards that match the filter, longest waiting first.
+// Keeps the cards that match the filter, newest application first.
 export function filterBoard(cards: readonly BoardCard[], filter: BoardFilter, viewerId: string): BoardCard[] {
   return cards
     .filter((card) => card.stage !== "draft")
@@ -41,7 +42,7 @@ export function filterBoard(cards: readonly BoardCard[], filter: BoardFilter, vi
     .filter((card) => matchesOwner(card, filter.owner, viewerId))
     .filter((card) => !filter.route || card.route === filter.route)
     .filter((card) => !filter.waiting || card.stage === "waiting_on_customer")
-    .sort((a, b) => (a.stageChangedAt ?? "").localeCompare(b.stageChangedAt ?? ""));
+    .sort((a, b) => (b.submittedAt ?? "").localeCompare(a.submittedAt ?? ""));
 }
 
 // Says how long a card has been in its stage, in the largest whole unit.

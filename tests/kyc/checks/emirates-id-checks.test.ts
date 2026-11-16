@@ -79,6 +79,7 @@ describe("MRZ_CHECK_DIGITS", () => {
     expect(result.status).toBe("fail");
     expect(result.customerMessageKey).toBe("Checks.MRZ_CHECK_DIGITS");
     expect(result.detail).toContain("expiry date");
+    expect(result.detail).toContain("misread or the card was edited");
     expect(result.detail).not.toMatch(/\d{6}/);
   });
 
