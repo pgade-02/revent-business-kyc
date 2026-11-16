@@ -3,21 +3,16 @@
 // Sex is in these lines too but is never returned (docs/document-specs/emirates-id.md §5).
 
 import { checkDigit } from "./mrz-check-digit";
+import { fitTrailingFiller } from "./mrz-filler";
 import { mrzBirthToIso, mrzCountry, mrzExpiryToIso } from "./mrz-date";
 
 export type EmiratesIdMrz = { line1: string; line2: string; name: string | null };
 
 // OCR splits and spaces the lines in different ways, so whitespace is removed first.
 const LINE_1 = /I[A-Z<]ARE[0-9]{9}[0-9][0-9]{15}/;
-// OCR often reads a run of "<" filler one too long or short (seen on our specimen cards).
-// Filler holds no data and counts 0 in every check digit, so a filler-only optional part
-// of any length is reset to 11 "<". Anything else must be exactly 11 characters.
+// The optional part is 11 characters; OCR may read its trailing filler too long or too short,
+// so it is captured loosely and fitted afterwards (mrz-filler.ts).
 const LINE_2 = /([0-9]{6}[0-9][MF<][0-9]{6}[0-9][A-Z<]{3})([A-Z0-9<]{8,14})([0-9])/;
-
-function normaliseOptional(optional: string): string | null {
-  if (/^<+$/.test(optional)) return "<".repeat(11);
-  return optional.length === 11 ? optional : null;
-}
 
 // Line 3 is "SURNAME<<GIVEN<NAMES" padded with "<". It has no check digit, and long names
 // are cut at 30 characters, so it is only compared loosely.
@@ -37,13 +32,13 @@ export function findEmiratesIdMrz(text: string): EmiratesIdMrz | null {
   const line2 = LINE_2.exec(afterLine1);
   if (!line2) return null;
   const [whole, fields = "", optional = "", overallCheck = ""] = line2;
-  const fixedOptional = normaliseOptional(optional);
+  const fixedOptional = fitTrailingFiller(optional, 11);
   if (fixedOptional === null) return null;
   const name = nameFrom(LINE_3.exec(afterLine1.slice(line2.index + whole.length)));
   return { line1: line1[0], line2: `${fields}${fixedOptional}${overallCheck}`, name };
 }
 
-// The four check digits of a TD1 card. Each entry says which part was checked, not its value.
+
 export function mrzCheckDigitFailures({ line1, line2 }: EmiratesIdMrz): string[] {
   const composite = line1.slice(5, 30) + line2.slice(0, 7) + line2.slice(8, 15) + line2.slice(18, 29);
   const checks = [

@@ -1,4 +1,5 @@
 import { checkDigit } from "./mrz-check-digit";
+import { fitTrailingFiller } from "./mrz-filler";
 import { mrzBirthToIso, mrzCountry, mrzExpiryToIso } from "./mrz-date";
 
 // The second machine-readable line of a passport (ICAO 9303, TD3: 2 × 44). Line 1 holds
@@ -10,11 +11,11 @@ export type PassportMrz = { line2: string };
 // then the optional data (14), its check, and the check over the whole line.
 const LINE_2 = /([A-Z0-9<]{9}[0-9][A-Z<]{3}[0-9]{6}[0-9][MFX<][0-9]{6}[0-9])([A-Z0-9<]{13,17})([0-9])/;
 
-// OCR misreads the length of "<" runs (decision log #46). A filler-only optional part is
-// reset to 14 "<"; its check digit may be "<" or "0" when the part is empty.
-function normaliseOptional(optional: string): string | null {
-  if (/^<+[0<]$/.test(optional)) return "<".repeat(14) + optional.slice(-1);
-  return optional.length === 15 ? optional : null;
+// The optional data (14) and its check digit, with the trailing filler fitted; the check digit
+// may be "<" or "0" when the data is empty.
+function normaliseOptional(optionalWithCheck: string): string | null {
+  const optional = fitTrailingFiller(optionalWithCheck.slice(0, -1), 14);
+  return optional === null ? null : optional + optionalWithCheck.slice(-1);
 }
 
 export function findPassportMrz(text: string): PassportMrz | null {
@@ -42,10 +43,14 @@ export function passportMrzCheckDigitFailures({ line2 }: PassportMrz): string[] 
   return checks.filter((check) => checkDigit(check.field) !== check.digit).map((check) => check.part);
 }
 
-export function passportMrzValues({ line2 }: PassportMrz, today: string) {
+// Only values whose own check digit passed (decision log #67): expiry and date of birth have
+// one each; nationality is covered only by the whole-line digit.
+export function passportMrzValues(mrz: PassportMrz, today: string): Record<string, string> {
+  const failures = passportMrzCheckDigitFailures(mrz);
+  const { line2 } = mrz;
   return {
-    expiryDate: mrzExpiryToIso(line2.slice(21, 27)),
-    dateOfBirth: mrzBirthToIso(line2.slice(13, 19), today),
-    nationality: mrzCountry(line2.slice(10, 13)),
+    ...(failures.includes("expiry date") ? {} : { expiryDate: mrzExpiryToIso(line2.slice(21, 27)) }),
+    ...(failures.includes("date of birth") ? {} : { dateOfBirth: mrzBirthToIso(line2.slice(13, 19), today) }),
+    ...(failures.includes("whole line") ? {} : { nationality: mrzCountry(line2.slice(10, 13)) }),
   };
 }

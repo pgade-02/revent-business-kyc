@@ -61,10 +61,10 @@ function findOnPage<T>(pages: PageText[], find: (text: string) => T | null) {
 
 type MrzRead = { check: CheckResult; fields: Record<string, ExtractedField<string>> };
 
-// Values from the machine-readable lines are kept only when every check digit is right,
-// so a misread birth date can never raise a false "different person" warning.
+// Values from the machine-readable lines are kept only when their own check digit is right (a
+// failed check keeps none), so a misread birth date can never raise a false "different person".
 function mrzRead(check: CheckResult, page: number | undefined, values: Record<string, string> | undefined): MrzRead {
-  if (check.status !== "pass" || page === undefined || !values) return { check, fields: {} };
+  if (check.status === "fail" || check.status === "skipped" || page === undefined || !values) return { check, fields: {} };
   const fields = Object.fromEntries(Object.entries(values).map(([name, value]) => [name, { value, page, confidenceBps: 10_000 }]));
   return { check, fields };
 }

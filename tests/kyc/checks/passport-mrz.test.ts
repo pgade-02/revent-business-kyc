@@ -20,7 +20,12 @@ describe("Passport machine-readable lines", () => {
   it("are found in OCR text even when spaced out, and give expiry, birth date and nationality", () => {
     const mrz = findPassportMrz(ocrText.replace(line2, line2.split("").join(" ")));
     expect(mrz?.line2).toBe(line2);
-    if (mrz) expect(passportMrzValues(mrz, "2026-11-14")).toEqual({ expiryDate: saraHaddad.passportExpires, dateOfBirth: saraHaddad.birthDate, nationality: "UTO" });
+    if (mrz)
+      expect(passportMrzValues(mrz, "2026-11-14")).toEqual({
+        expiryDate: saraHaddad.passportExpires,
+        dateOfBirth: saraHaddad.birthDate,
+        nationality: "UTO",
+      });
   });
 
   it("tolerate OCR reading the filler one character too long or short", () => {
@@ -55,6 +60,18 @@ describe("PASSPORT_MRZ", () => {
   it("names the passport number when a character of it is changed", () => {
     const edited = replaceAt(line2, 2, line2[2] === "A" ? "B" : "A");
     expect(checkPassportMrz("doc_test", found(ocrText.replace(line2, edited))).detail).toContain("passport number");
+  });
+
+  it("warns, without asking the customer, when only the optional section is misread, and uses only verified values", () => {
+    const optionalMisread = replaceAt(line2, 30, "7"); // a filler read as a digit
+    const found = findPassportMrz(`PASSPORT
+${optionalMisread}`);
+    const result = checkPassportMrz("doc_test", found ? { mrz: found, page: 1 } : null);
+    expect(result).toMatchObject({ status: "warn" });
+    expect(result.customerMessageKey).toBeUndefined();
+    if (!found) throw new Error("lines not found");
+    const values = passportMrzValues(found, "2026-11-15");
+    expect(values).toEqual({ expiryDate: saraHaddad.passportExpires, dateOfBirth: saraHaddad.birthDate }); // nationality has no own check digit
   });
 
   it("is skipped when there are no machine-readable lines", () => {
