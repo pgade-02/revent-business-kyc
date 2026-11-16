@@ -1,6 +1,9 @@
 import { sql } from "drizzle-orm";
 import { DOCUMENT_SLOTS } from "@/kyc/documents/slots";
 import { REVIEW_ACTIONS } from "@/kyc/review/review-action";
+import { DOCUMENT_REVIEW_STATES } from "@/ops/document-review";
+import { APPLICATION_STAGES } from "@/ops/stages";
+import { TIMELINE_EVENTS } from "@/ops/timeline";
 import {
   bigint,
   boolean,
@@ -78,7 +81,7 @@ export const scoringSettings = pgTable("scoring_settings", {
 });
 
 export const applicationRoute = pgEnum("application_route", ["self_disclosure", "verification_call"]);
-export const applicationStatus = pgEnum("application_status", ["draft", "submitted"]);
+export const applicationStatus = pgEnum("application_status", APPLICATION_STAGES);
 
 // One customer application. Money figures are computed on the server when the plan is saved.
 // Company, signatory and document details are added by later steps (later migrations).
@@ -114,6 +117,9 @@ export const applications = pgTable(
     signatoryMobile: text("signatory_mobile"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
     submittedAt: timestamp("submitted_at", { withTimezone: true, mode: "string" }),
+    reference: text("reference").unique(),
+    assignedTo: text("assigned_to").references(() => users.id),
+    stageChangedAt: timestamp("stage_changed_at", { withTimezone: true, mode: "string" }),
   },
   (table) => [check("applications_term_offered", sql`${table.term} IN (24, 36, 48)`)],
 );
@@ -136,6 +142,7 @@ export const planItems = pgTable(
 
 export const documentSlot = pgEnum("document_slot", DOCUMENT_SLOTS);
 // "checking" while the file is being read; "failed" if processing crashed (the customer can retry).
+export const documentReviewState = pgEnum("document_review_state", DOCUMENT_REVIEW_STATES);
 export const documentStatus = pgEnum("document_status", ["checking", "ready", "needs_fix", "needs_review", "failed"]);
 export const checkStatus = pgEnum("check_status", ["pass", "warn", "fail", "skipped"]);
 
@@ -161,6 +168,10 @@ export const documents = pgTable(
     fields: jsonb("fields"), // values read from the document, validated by Zod on the way out
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
     replacedAt: timestamp("replaced_at", { withTimezone: true, mode: "string" }),
+    uploadedBy: text("uploaded_by").references(() => users.id), // null: the customer; a reviewer id: uploaded for the customer
+    reviewState: documentReviewState("review_state").notNull().default("to_review"),
+    reviewedBy: text("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true, mode: "string" }),
   },
   (table) => [index("documents_sha256").on(table.sha256), index("documents_application").on(table.applicationId)],
 );
@@ -243,4 +254,51 @@ export const reviewActions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
   },
   (table) => [index("review_actions_application").on(table.applicationId)],
+);
+
+// "Ask for more information": one request with one or more items, emailed to the customer.
+export const infoRequests = pgTable(
+  "info_requests",
+  {
+    id: serial("id").primaryKey(),
+    applicationId: integer("application_id")
+      .notNull()
+      .references(() => applications.id),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+    answeredAt: timestamp("answered_at", { withTimezone: true, mode: "string" }),
+  },
+  (table) => [index("info_requests_application").on(table.applicationId)],
+);
+
+export const infoRequestItems = pgTable("info_request_items", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id")
+    .notNull()
+    .references(() => infoRequests.id),
+  subject: text("subject").notNull(), // a document slot, company_details or signatory_details (Zod-checked)
+  reason: text("reason").notNull(),
+  note: text("note"),
+  noteAr: text("note_ar"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true, mode: "string" }),
+});
+
+export const timelineEvent = pgEnum("timeline_event", TIMELINE_EVENTS);
+
+// The application's Timeline (and audit log): who did what, when. Ids and field names only.
+export const timelineEvents = pgTable(
+  "timeline_events",
+  {
+    id: serial("id").primaryKey(),
+    applicationId: integer("application_id")
+      .notNull()
+      .references(() => applications.id),
+    actorId: text("actor_id").references(() => users.id), // null: the system
+    event: timelineEvent("event").notNull(),
+    detail: jsonb("detail").notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [index("timeline_events_application").on(table.applicationId)],
 );

@@ -5,6 +5,6 @@ import { routing } from "./i18n/routing";
 export default createMiddleware(routing);
 
 export const config = {
-  // Skip API routes, the English-only team UI, Next internals and files like favicon.ico.
-  matcher: "/((?!api|team|_next|_vercel|.*\\..*).*)",
+  // Skip API routes, the English-only team and back-office UI, Next internals and files like favicon.ico.
+  matcher: "/((?!api|team|ops|_next|_vercel|.*\\..*).*)",
 };

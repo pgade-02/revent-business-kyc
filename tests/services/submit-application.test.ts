@@ -7,6 +7,8 @@ import { applications } from "@/db/schema";
 import { seedDatabase } from "@/db/seed/seed";
 import { saveSignatoryDetails } from "@/db/signatory-details";
 import type { DocumentSlot } from "@/kyc/documents/slots";
+import { listTimeline } from "@/db/timeline";
+import { isApplicationReference } from "@/ops/reference";
 import { createApplication } from "@/services/applications";
 import { submitApplication } from "@/services/submit-application";
 
@@ -66,6 +68,9 @@ describe("submitApplication", () => {
     const [row] = await db.select().from(applications).where(eq(applications.id, application.id));
     expect(row?.status).toBe("submitted");
     expect(new Date(row?.submittedAt ?? "").toISOString()).toBe(submittedAt);
+    expect(isApplicationReference(row?.reference ?? "")).toBe(true);
+    expect(row?.reference?.startsWith("RB-26-")).toBe(true);
+    expect((await listTimeline(db, application.id)).map((entry) => entry.event)).toEqual(["submitted"]);
 
     expect(await submitApplication(db, application, submittedAt)).toEqual({ ok: false, reason: "ALREADY_SUBMITTED" });
   });

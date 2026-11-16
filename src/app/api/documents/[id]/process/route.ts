@@ -1,6 +1,9 @@
 import { accessDeniedResponse, findCustomerDocument, parseId } from "@/auth/access";
-import { getDocumentServices } from "@/services/app-services";
+import { eq } from "drizzle-orm";
+import { applications } from "@/db/schema";
+import { getDocumentServices, runAssessmentSafely } from "@/services/app-services";
 import { processDocument } from "@/services/documents";
+import { recordCustomerAnswer } from "@/services/request-answers";
 
 // Read and check an uploaded file, then answer with its status and customer messages.
 // Only a file still "checking" (or one whose run crashed) can be processed.
@@ -16,5 +19,11 @@ export async function POST(_request: Request, context: RouteContext<"/api/docume
   if (document.status !== "checking" && document.status !== "failed") {
     return Response.json({ error: "Already checked" }, { status: 409 });
   }
-  return Response.json(await processDocument(services, document, access.user.id));
+  const result = await processDocument(services, document, access.user.id);
+  const [application] = await services.db.select().from(applications).where(eq(applications.id, document.applicationId));
+  if (application) {
+    const backToReview = await recordCustomerAnswer(services.db, { application, customerId: access.user.id, subject: document.slot, now: new Date().toISOString() });
+    if (backToReview) await runAssessmentSafely(services.db, application.id);
+  }
+  return Response.json(result);
 }

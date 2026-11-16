@@ -21,6 +21,7 @@ import { intakeFile, type AcceptedFile, type IntakeRejection } from "@/kyc/intak
 import type { FileStore } from "@/kyc/interfaces/file-store";
 import type { ImageProcessor } from "@/kyc/interfaces/image-processor";
 import type { PdfInspector } from "@/kyc/interfaces/pdf-inspector";
+import { recordEvent } from "@/db/timeline";
 
 // Everything the document steps need from outside, passed in so tests can swap any part.
 export type DocumentServices = {
@@ -41,7 +42,7 @@ export type UploadResult =
 // and record it as "checking". Fast, so the screen can answer straight away.
 export async function uploadDocument(
   services: DocumentServices,
-  input: { applicationId: number; slot: DocumentSlot; bytes: Uint8Array },
+  input: { applicationId: number; slot: DocumentSlot; bytes: Uint8Array; actorId?: string },
 ): Promise<UploadResult> {
   const intake = await intakeFile({
     bytes: input.bytes,
@@ -68,6 +69,7 @@ export async function uploadDocument(
     imageWidth: file.imageSize?.width ?? null,
     imageHeight: file.imageSize?.height ?? null,
   });
+  await recordEvent(services.db, { applicationId: input.applicationId, actorId: input.actorId ?? null, event: "document_uploaded", detail: { documentId, slot: input.slot } });
   return { ok: true, documentId, sizeBytes: file.bytes.byteLength, pageCount: file.pageCount };
 }
 

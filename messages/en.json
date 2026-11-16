@@ -247,6 +247,24 @@
       "submitFailed": "We couldn’t submit your application. Please try again.",
       "inProgressTitle": "Verification in progress",
       "inProgressBody": "Thank you. We’ve received your application and our team is checking it. We’ll send your quote within 1 working day."
+    },
+    "request": {
+      "title": "We need a few more things",
+      "intro": "Our team checked your application and needs the items below. Everything else is done.",
+      "note": "Note from our team",
+      "update": "Update",
+      "subject": {
+        "company_details": "Company details",
+        "signatory_details": "Authorised signatory’s details"
+      },
+      "reason": {
+        "expired": "Expired",
+        "not_clear": "Not clear or hard to read",
+        "wrong_document": "Wrong document",
+        "missing_pages": "Pages missing",
+        "details_do_not_match": "Details don’t match",
+        "other": "Needs a change"
+      }
     }
   }
 }

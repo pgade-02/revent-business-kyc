@@ -7,10 +7,14 @@ import { labelledLinesLlm } from "@/providers/fakes/fake-llm-provider";
 import { createLocalFileStore } from "@/providers/local-file-store";
 import { createMistralLlmProvider } from "@/providers/mistral/mistral-llm-provider";
 import { createMistralOcrProvider } from "@/providers/mistral/mistral-ocr-provider";
+import { createOpusMtTranslator } from "@/providers/local/opus-mt-translator";
 import { pdfLibInspector } from "@/providers/pdf-lib-inspector";
 import { pdfjsTextReader } from "@/providers/pdfjs-text-reader";
 import { sharpImageProcessor } from "@/providers/sharp-image-processor";
+import type { Database } from "@/db/client";
+import { recordEvent } from "@/db/timeline";
 import type { DocumentServices } from "./documents";
+import { runAssessment } from "./run-assessment";
 
 // Real OCR and AI when MISTRAL_API_KEY is set; otherwise honest stand-ins: OCR says
 // "unavailable" (photos go to Needs review) and a labelled-lines reader fills forms.
@@ -25,15 +29,37 @@ export function getDocumentReaders(env: Record<string, string | undefined>): Doc
   };
 }
 
+// Returns the translator that drafts Arabic for the back office.
+export function getTranslator() {
+  const ai = readAiConfig(process.env);
+  return createOpusMtTranslator({ model: ai.translationModel, timeoutMs: ai.translationTimeoutMs });
+}
+
+// Returns the store that keeps uploaded files.
+export function getFileStore() {
+  return createLocalFileStore(process.env.FILE_STORE_DIR || path.join(process.cwd(), ".data", "files"));
+}
+
 // The one place that decides which real parts the running app uses.
 export async function getDocumentServices(): Promise<DocumentServices> {
   return {
     db: await getAppDatabase(),
-    fileStore: createLocalFileStore(process.env.FILE_STORE_DIR || path.join(process.cwd(), ".data", "files")),
+    fileStore: getFileStore(),
     limits: readUploadLimits(process.env),
     pdfInspector: pdfLibInspector,
     imageProcessor: sharpImageProcessor,
     readers: getDocumentReaders(process.env),
     now: () => new Date(),
   };
+}
+
+// Runs the assessment, logging only the id and error type if it fails.
+export async function runAssessmentSafely(db: Database, applicationId: number) {
+  try {
+    const ai = { llm: getDocumentReaders(process.env).llm, timeoutMs: readUploadLimits(process.env).llmTimeoutMs };
+    await runAssessment(db, applicationId, ai);
+    await recordEvent(db, { applicationId, actorId: null, event: "assessment_ready" });
+  } catch (error) {
+    console.error(`Assessment failed for application ${applicationId}: ${error instanceof Error ? error.name : "unknown error"}`);
+  }
 }

@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import { applications, documents } from "@/db/schema";
 import { getCurrentUser, type SessionUser } from "./session";
@@ -52,7 +52,7 @@ export async function findLatestCustomerApplication(db: Database): Promise<Acces
   return row ? { ok: true, user: customer.user, value: row } : { ok: false, reason: "NOT_FOUND" };
 }
 
-// The team side: only the reviewer role, and only applications that were submitted.
+// The team side: only the reviewer role, and only applications past the draft stage.
 // A draft is still the customer's to change, so it looks exactly like a missing one.
 export async function currentReviewer(): Promise<{ ok: true; user: SessionUser } | { ok: false; reason: AccessDenied }> {
   const user = await getCurrentUser();
@@ -66,8 +66,20 @@ export async function findReviewerApplication(db: Database, applicationId: numbe
   const [row] = await db
     .select()
     .from(applications)
-    .where(and(eq(applications.id, applicationId), eq(applications.status, "submitted")));
+    .where(and(eq(applications.id, applicationId), ne(applications.status, "draft")));
   return row ? { ok: true, user: reviewer.user, value: row } : { ok: false, reason: "NOT_FOUND" };
+}
+
+// Finds a document of a non-draft application for the signed-in reviewer.
+export async function findReviewerDocument(db: Database, documentId: number): Promise<Access<DocumentRow>> {
+  const reviewer = await currentReviewer();
+  if (!reviewer.ok) return reviewer;
+  const [row] = await db
+    .select({ document: documents })
+    .from(documents)
+    .innerJoin(applications, eq(documents.applicationId, applications.id))
+    .where(and(eq(documents.id, documentId), ne(applications.status, "draft")));
+  return row ? { ok: true, user: reviewer.user, value: row.document } : { ok: false, reason: "NOT_FOUND" };
 }
 
 const statusFor: Record<AccessDenied, number> = { SIGNED_OUT: 401, NOT_A_CUSTOMER: 403, NOT_A_REVIEWER: 403, NOT_FOUND: 404 };

@@ -3,6 +3,7 @@ import { accessDeniedResponse, findCustomerApplication, parseId } from "@/auth/a
 import { DOCUMENT_SLOTS } from "@/kyc/documents/slots";
 import { getDocumentServices } from "@/services/app-services";
 import { uploadDocument } from "@/services/documents";
+import { canCustomerChange } from "@/services/request-answers";
 
 const slotField = z.enum(DOCUMENT_SLOTS);
 
@@ -14,12 +15,12 @@ export async function POST(request: Request, context: RouteContext<"/api/applica
   const services = await getDocumentServices();
   const access = await findCustomerApplication(services.db, applicationId);
   if (!access.ok) return accessDeniedResponse(access.reason);
-  if (access.value.status !== "draft") return Response.json({ error: "Already submitted" }, { status: 409 });
 
   const form = await request.formData().catch(() => null);
   const slot = slotField.safeParse(form?.get("slot"));
   const file = form?.get("file");
   if (!slot.success || !(file instanceof File)) return Response.json({ error: "Expected a slot and a file" }, { status: 400 });
+  if (!(await canCustomerChange(services.db, access.value, slot.data))) return Response.json({ error: "Already submitted" }, { status: 409 });
 
   // Refuse an oversized file before copying it into memory.
   if (file.size > services.limits.maxBytes) return Response.json({ reason: "TOO_LARGE" }, { status: 422 });
@@ -28,6 +29,7 @@ export async function POST(request: Request, context: RouteContext<"/api/applica
     applicationId,
     slot: slot.data,
     bytes: new Uint8Array(await file.arrayBuffer()),
+    actorId: access.user.id,
   });
   if (!result.ok) return Response.json({ reason: result.reason }, { status: 422 });
   const { documentId, sizeBytes, pageCount } = result;

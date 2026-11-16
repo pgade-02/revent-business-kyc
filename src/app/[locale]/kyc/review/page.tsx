@@ -1,5 +1,6 @@
 import { CheckCircle2Icon, ChevronRightIcon, ClockIcon } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { RequestBanner } from "@/components/kyc/request-banner";
 import { SubmitButton } from "@/components/kyc/submit-button";
 import { TASK_HREF } from "@/components/kyc/task-routes";
 import { TaskStatusPill } from "@/components/kyc/task-status-pill";
@@ -14,6 +15,7 @@ export default async function ReviewPage({ params }: PageProps<"/[locale]/kyc/re
   if (!overview) return null; // the layout already shows "Build your plan first"
   const t = await getTranslations("Kyc");
 
+  if (overview.openRequestItems.length > 0) return <RequestBanner items={overview.openRequestItems} />;
   if (overview.submitted) {
     return (
       <div className="flex flex-col items-start gap-4">

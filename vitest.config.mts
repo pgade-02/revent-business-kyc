@@ -9,5 +9,7 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     exclude: ["tests/e2e/**", "node_modules/**"],
+    // Each database test file migrates its own in-memory database; many at once share the CPU.
+    hookTimeout: 30_000,
   },
 });

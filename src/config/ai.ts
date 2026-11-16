@@ -8,9 +8,19 @@ const aiFromEnv = z.object({
   MISTRAL_LLM_MODEL: z.string().min(1).default("mistral-small-latest"),
   // OCR of a phone photo usually takes a few seconds; this keeps a document inside 15 s (PRD §7).
   OCR_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000),
+  TRANSLATION_MODEL: z.string().min(1).default("Xenova/opus-mt-en-ar"),
+  // The first call also loads the model, which takes longer than a translation.
+  TRANSLATION_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
 });
 
-export type AiConfig = { mistralApiKey: string | null; ocrModel: string; llmModel: string; ocrTimeoutMs: number };
+export type AiConfig = {
+  mistralApiKey: string | null;
+  ocrModel: string;
+  llmModel: string;
+  ocrTimeoutMs: number;
+  translationModel: string;
+  translationTimeoutMs: number;
+};
 
 export function readAiConfig(env: Record<string, string | undefined>): AiConfig {
   const present = Object.fromEntries(Object.keys(aiFromEnv.shape).map((key) => [key, env[key] || undefined]));
@@ -20,5 +30,7 @@ export function readAiConfig(env: Record<string, string | undefined>): AiConfig 
     ocrModel: parsed.MISTRAL_OCR_MODEL,
     llmModel: parsed.MISTRAL_LLM_MODEL,
     ocrTimeoutMs: parsed.OCR_TIMEOUT_MS,
+    translationModel: parsed.TRANSLATION_MODEL,
+    translationTimeoutMs: parsed.TRANSLATION_TIMEOUT_MS,
   };
 }

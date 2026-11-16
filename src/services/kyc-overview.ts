@@ -2,6 +2,7 @@ import { cache } from "react";
 import { findLatestCustomerApplication } from "@/auth/access";
 import type { SessionUser } from "@/auth/session";
 import { getAppDatabase } from "@/db/app-db";
+import { listOpenRequestItems } from "@/db/info-requests";
 import type { SavedCompanyDetails } from "@/db/company-details";
 import type { CurrentDocument } from "@/db/documents";
 import type { SavedSignatoryDetails } from "@/db/signatory-details";
@@ -16,6 +17,7 @@ export type KycOverview = {
   user: SessionUser;
   applicationId: number;
   submitted: boolean;
+  openRequestItems: Awaited<ReturnType<typeof listOpenRequestItems>>;
   documents: CurrentDocument[];
   companyDetails: SavedCompanyDetails | null;
   signatoryDetails: SavedSignatoryDetails | null;
@@ -38,7 +40,8 @@ export const loadKycOverview = cache(async (): Promise<KycOverview | null> => {
   return {
     user: access.user,
     applicationId: access.value.id,
-    submitted: access.value.status === "submitted",
+    submitted: access.value.status !== "draft",
+    openRequestItems: await listOpenRequestItems(db, access.value.id),
     documents,
     companyDetails,
     signatoryDetails,

@@ -87,7 +87,15 @@ describe("choosing the readers", () => {
     expect(getDocumentReaders({ MISTRAL_API_KEY: "k" }).llm).not.toBe(labelledLinesLlm);
   });
 
-  it("reads model names and the OCR time limit from env, with defaults", () => {
-    expect(readAiConfig({})).toEqual({ mistralApiKey: null, ocrModel: "mistral-ocr-latest", llmModel: "mistral-small-latest", ocrTimeoutMs: 8_000 });
+  it("reads model names and time limits from env, with defaults", () => {
+    expect(readAiConfig({})).toEqual({
+      mistralApiKey: null,
+      ocrModel: "mistral-ocr-latest",
+      llmModel: "mistral-small-latest",
+      ocrTimeoutMs: 8_000,
+      translationModel: "Xenova/opus-mt-en-ar",
+      translationTimeoutMs: 60_000,
+    });
+    expect(readAiConfig({ TRANSLATION_TIMEOUT_MS: "5000" }).translationTimeoutMs).toBe(5_000);
   });
 });

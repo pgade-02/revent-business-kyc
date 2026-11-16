@@ -8,7 +8,7 @@ const CODE = "EMIRATE_MATCH";
 type Emirate = (typeof EMIRATES)[number];
 
 // "Abu Dhabi", "ABU-DHABI" and "Umm Al Quwain" become the codes the form uses.
-function emirateOf(printed: string): Emirate | null {
+export function emirateOf(printed: string): Emirate | null {
   const key = words(printed).join("_");
   return EMIRATES.find((emirate) => emirate === key) ?? null;
 }
