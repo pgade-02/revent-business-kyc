@@ -28,7 +28,8 @@ export default defineConfig({
     // Browser tests never call the paid AI provider: an empty key (which Next does not
     // replace with the one in .env.local) keeps the app on its stand-in readers.
     // Playwright's env replaces the whole environment, so the normal one is copied in first.
-    env: { ...definedEnv(), MISTRAL_API_KEY: "", DATABASE_DIR: ".data/e2e/pglite", FILE_STORE_DIR: ".data/e2e/files" },
+    // Builds into its own folder so a running `npm run dev` keeps serving the current code.
+    env: { ...definedEnv(), MISTRAL_API_KEY: "", DATABASE_DIR: ".data/e2e/pglite", FILE_STORE_DIR: ".data/e2e/files", NEXT_DIST_DIR: ".next-e2e" },
     port,
     reuseExistingServer: false,
     timeout: 240_000,
